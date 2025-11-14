@@ -29,9 +29,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() {
+    if (_formKey.currentState!.validate()) {
    
   
-    // }
+    }
   }
 
   @override
@@ -186,21 +187,21 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
 
                           // Forgot Password
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
-                                // Handle forgot password
-                              },
-                              child: const Text(
-                                'Forgot Password?',
-                                style: TextStyle(
-                                  color: Color(0xFF8C7CD4),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
+                          // Align(
+                          //   alignment: Alignment.centerRight,
+                          //   child: TextButton(
+                          //     onPressed: () {
+                          //       // Handle forgot password
+                          //     },
+                          //     child: const Text(
+                          //       'Forgot Password?',
+                          //       style: TextStyle(
+                          //         color: Color(0xFF8C7CD4),
+                          //         fontWeight: FontWeight.w600,
+                          //       ),
+                          //     ),
+                          //   ),
+                          // ),
 
                           const SizedBox(height: 24),
 
