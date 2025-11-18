@@ -729,7 +729,7 @@ class UpdateProjectPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Update Project"),
-        backgroundColor: const Color(0xFFFF5722),
+        backgroundColor: const Color.fromARGB(255, 119, 78, 65),
         foregroundColor: Colors.white,
       ),
       body: ListView.builder(
