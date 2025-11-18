@@ -24,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() { 
     emailCtrl.dispose();
-    passwordCtrl.dispose();
+    passwordCtrl.dispose(); 
     super.dispose();
   }
 

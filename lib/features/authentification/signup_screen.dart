@@ -47,6 +47,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   'email': emailCtrl.text,
                   'password': passwordCtrl.text,
                   'role': _selectedUserType,
+                  'status':1
                 })
                 .then((value) {
                   showCustomSnackBar(
