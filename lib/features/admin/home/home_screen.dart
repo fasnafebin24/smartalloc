@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smartalloc/features/admin/manage/managestudent_screen.dart';
+import 'package:smartalloc/features/admin/manage/manageteacher_screen.dart';
+import 'package:smartalloc/features/authentification/login_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -121,7 +125,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     childAspectRatio: 1.1,
                     children: [
                       adminActionCard(
-                        "Manage Users",
+                        "Manage students",
                         Icons.people_outline,
                         const Color(0xFF4CAF50),
                         () {
@@ -141,7 +145,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const ManageTeachersPage(),
+                              builder: (context) => const ManageTeacherPage(),
                             ),
                           );
                         },
@@ -237,6 +241,25 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           );
                         },
                       ),
+                       adminActionCard(
+                        "Logout",
+                        Icons.logout,
+                        const Color.fromARGB(255, 212, 5, 5),
+                        ()async {
+                            SharedPreferences prefs = await  SharedPreferences.getInstance();
+                prefs.clear();
+                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder:(context) => LoginScreen(),), (route) => false,);
+                // Add your logout logic here
+                // For example: navigate to login screen
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Logged out successfully!"),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                         
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -300,114 +323,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 }
 
 // Manage Users Page
-class ManageUsersPage extends StatelessWidget {
-  const ManageUsersPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Manage Users"),
-        backgroundColor: const Color(0xFF4CAF50),
-        foregroundColor: Colors.white,
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 10,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: const Color(0xFF4CAF50),
-                foregroundColor: Colors.white,
-                child: Text("U${index + 1}"),
-              ),
-              title: Text("Student ${index + 1}"),
-              subtitle: Text("student${index + 1}@example.com"),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Edit Student ${index + 1}")),
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Delete Student ${index + 1}")),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// Manage Teachers Page
-class ManageTeachersPage extends StatelessWidget {
-  const ManageTeachersPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Manage Teachers"),
-        backgroundColor: const Color(0xFF2196F3),
-        foregroundColor: Colors.white,
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: const Color(0xFF2196F3),
-                foregroundColor: Colors.white,
-                child: Text("T${index + 1}"),
-              ),
-              title: Text("Teacher ${index + 1}"),
-              subtitle: Text("teacher${index + 1}@example.com"),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Edit Teacher ${index + 1}")),
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Delete Teacher ${index + 1}")),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
 
 // Upload Project Page
 class UploadProjectPage extends StatefulWidget {

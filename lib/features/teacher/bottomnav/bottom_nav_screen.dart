@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smartalloc/features/authentification/login_screen.dart';
 
 // Main Teacher Dashboard with Bottom Navigation
 class TeacherDashboard extends StatefulWidget {
@@ -638,7 +640,19 @@ class SettingsScreen extends StatelessWidget {
                     _settingTile(Icons.help, 'Help & Support', () {}),
                     _settingTile(Icons.info, 'About', () {}),
                     const SizedBox(height: 20),
-                    _settingTile(Icons.logout, 'Logout', () {}, isLogout: true),
+                    _settingTile(Icons.logout, 'Logout', ()async {
+                       SharedPreferences prefs = await  SharedPreferences.getInstance();
+                prefs.clear();
+                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder:(context) => LoginScreen(),), (route) => false,);
+                // Add your logout logic here
+                // For example: navigate to login screen
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Logged out successfully!"),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                    }, isLogout: true),
                   ],
                 ),
               ),
