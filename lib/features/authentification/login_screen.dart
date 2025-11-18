@@ -1,11 +1,15 @@
 import 'dart:developer';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartalloc/features/admin/home/home_screen.dart';
 import 'package:smartalloc/features/home/home%20_screen.dart';
 import 'package:smartalloc/features/authentification/signup_screen.dart';
 import 'package:smartalloc/features/landing/landing_screen.dart';
 import 'package:smartalloc/features/teacher/bottomnav/bottom_nav_screen.dart';
+import 'package:smartalloc/utils/methods/customsnackbar.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,13 +31,72 @@ class _LoginScreenState extends State<LoginScreen> {
     passwordCtrl.dispose(); 
     super.dispose();
   }
+  Future<void> saveUserData(String uid, String role) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setString('uid', uid);
+  await prefs.setString('role', role);
+}
 
-  void _handleLogin() {
-    if (_formKey.currentState!.validate()) {
-   
-  
+
+ void _handleLogin() async {
+  if (_formKey.currentState!.validate()) {
+    try {
+      final value = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: emailCtrl.text,
+            password: passwordCtrl.text,
+          );
+
+      final uid = value.user?.uid;
+
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection("Users")
+          .doc(uid)
+          .get();
+
+      if (doc.exists) {
+        var data = doc.data() as Map<String, dynamic>;
+        String role = data['role'];
+
+        // Save uid & role locally
+        await saveUserData(uid!, role);
+
+        // Navigate based on role
+        if (role == 'student') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => HomeScreen()),
+          );
+        } 
+        else if (role == 'teacher') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => TeacherDashboard()),
+          );
+        } 
+        else if (role == 'admin') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => AdminHomeScreen()),
+          );
+        } 
+        else {
+          showCustomSnackBar(context,
+              message: "Unknown role!", type: SnackType.error);
+        }
+
+      } else {
+        showCustomSnackBar(context,
+            message: 'User not found', type: SnackType.error);
+      }
+
+    } catch (e) {
+      showCustomSnackBar(context,
+          message: e.toString(), type: SnackType.error);
     }
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -66,22 +129,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // Logo or App Name
-                          GestureDetector(
-                            onTap: () {
-                              log('message');
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => AdminHomeScreen(),
-                                ),
-                                (route) => false,
-                              );
-                            },
-                            child: const Icon(
-                              Icons.account_balance_wallet,
-                              size: 64,
-                              color: Color(0xFF8C7CD4),
-                            ),
+                          const Icon(
+                            Icons.account_balance_wallet,
+                            size: 64,
+                            color: Color(0xFF8C7CD4),
                           ),
                           const SizedBox(height: 16),
                           const Text(
