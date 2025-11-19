@@ -36,12 +36,100 @@ class _ManageTeacherPageState extends State<ManageTeacherPage> {
     return collection.snapshots();
   }
 
+  // ---------- BLOCK/UNBLOCK TEACHER METHOD ----------
+  Future<void> toggleBlockTeacher(String uid, int currentStatus) async {
+    try {
+      int newStatus = currentStatus == 1 ? 0 : 1; // Toggle between active (1) and blocked (0)
+      
+      await FirebaseFirestore.instance
+          .collection("Users")
+          .doc(uid)
+          .update({"status": newStatus});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newStatus == 0 ? "Teacher blocked" : "Teacher unblocked"),
+            backgroundColor: newStatus == 0 ? Colors.orange : Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ---------- DELETE TEACHER METHOD ----------
+  Future<void> deleteTeacher(String uid) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection("Users")
+          .doc(uid)
+          .update({"status": -1});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Teacher deleted"),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ---------- UNDELETE TEACHER METHOD ----------
+  Future<void> undeleteTeacher(String uid) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection("Users")
+          .doc(uid)
+          .update({"status": 1}); // Restore to active status
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Teacher restored"),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Manage Teacher"),
-        backgroundColor: const Color(0xFF4CAF50),
         foregroundColor: Colors.white,
       ),
 
@@ -86,6 +174,7 @@ class _ManageTeacherPageState extends State<ManageTeacherPage> {
                   itemCount: teachers.length,
                   itemBuilder: (context, index) {
                     var teacher = teachers[index].data() as Map<String, dynamic>;
+                    int status = teacher["status"] ?? 1;
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -100,19 +189,38 @@ class _ManageTeacherPageState extends State<ManageTeacherPage> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Edit
-                           
+                            // Block/Unblock Button (only show if not deleted)
+                            if (status != -1)
+                              IconButton(
+                                icon: Icon(
+                                  status == 1 ? Icons.block : Icons.check_circle,
+                                  color: status == 1 ? Colors.orange : Colors.green,
+                                ),
+                                onPressed: () {
+                                  toggleBlockTeacher(teacher["uid"], status);
+                                },
+                                tooltip: status == 1 ? "Block" : "Unblock",
+                              ),
 
-                            // Delete
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () async {
-                                await FirebaseFirestore.instance
-                                    .collection("Users")
-                                    .doc(teacher["uid"])
-                                    .update({"status": -1});
-                              },
-                            ),
+                            // Delete/Undelete Button
+                            if (status == -1)
+                              // Undelete button for deleted teachers
+                              IconButton(
+                                icon: const Icon(Icons.restore, color: Colors.blue),
+                                onPressed: () {
+                                  undeleteTeacher(teacher["uid"]);
+                                },
+                                tooltip: "Restore",
+                              )
+                            else
+                              // Delete button for active/blocked teachers
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () {
+                                  deleteTeacher(teacher["uid"]);
+                                },
+                                tooltip: "Delete",
+                              ),
                           ],
                         ),
                       ),

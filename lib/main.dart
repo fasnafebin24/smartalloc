@@ -17,7 +17,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Smartalloc',
       debugShowCheckedModeBanner: false,
-      
+        theme: ThemeData(
+          appBarTheme: AppBarTheme(
+            backgroundColor: Color(0xFF8674EC),
+          )
+        ),
       home: SplashScreen(),
     );
   }
