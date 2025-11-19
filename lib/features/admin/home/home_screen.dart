@@ -4,6 +4,8 @@ import 'package:smartalloc/features/admin/manage/managestudent_screen.dart';
 import 'package:smartalloc/features/admin/manage/manageteacher_screen.dart';
 import 'package:smartalloc/features/authentification/login_screen.dart';
 
+import '../project/uploadproject_screen.dart';
+
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
@@ -322,108 +324,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 }
 
-// Manage Users Page
 
-
-// Upload Project Page
-class UploadProjectPage extends StatefulWidget {
-  const UploadProjectPage({super.key});
-
-  @override
-  State<UploadProjectPage> createState() => _UploadProjectPageState();
-}
-
-class _UploadProjectPageState extends State<UploadProjectPage> {
-  final TextEditingController titleCtrl = TextEditingController();
-  final TextEditingController descCtrl = TextEditingController();
-
-  @override
-  void dispose() {
-    titleCtrl.dispose();
-    descCtrl.dispose();
-    super.dispose();
-  }
-  
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Upload Project"),
-        backgroundColor: const Color(0xFFFF9800),
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: titleCtrl,
-              decoration: InputDecoration(
-                labelText: "Project Title",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descCtrl,
-              maxLines: 5,
-              decoration: InputDecoration(
-                labelText: "Project Description",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("File picker opened")),
-                );
-              },
-              icon: const Icon(Icons.file_upload),
-              label: const Text("Upload Files"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF9800),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                if (titleCtrl.text.isEmpty || descCtrl.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Please fill all fields!"),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Project uploaded successfully!"),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4CAF50),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              child: const Text("Submit Project"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // Upload Abstract Page
 class UploadAbstractPage extends StatefulWidget {

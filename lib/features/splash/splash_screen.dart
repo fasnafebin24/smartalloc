@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -20,8 +22,8 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     Timer(Duration(seconds: 3), () async{
        SharedPreferences prefs = await SharedPreferences.getInstance();
- String? uid= await prefs.getString('uid', );
-  String? role=await prefs.getString('role', );
+ String? uid= prefs.getString('uid', );
+  String? role=prefs.getString('role', );
   if (uid!=null && role!=null) {
      if (role == 'student') {
           Navigator.pushReplacement(
@@ -61,7 +63,7 @@ class _SplashScreenState extends State<SplashScreen> {
         width: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [const Color.fromARGB(255, 176, 164, 245), Colors.white],
+            colors: [const Color(0xFFB0A4F5), Colors.white],
             begin: AlignmentGeometry.topLeft,
             end: AlignmentGeometry.bottomLeft,
           ),

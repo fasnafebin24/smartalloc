@@ -36,6 +36,95 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
     return collection.snapshots();
   }
 
+  // ---------- BLOCK/UNBLOCK STUDENT METHOD ----------
+  Future<void> toggleBlockStudent(String uid, int currentStatus) async {
+    try {
+      int newStatus = currentStatus == 1 ? 0 : 1; // Toggle between active (1) and blocked (0)
+      
+      await FirebaseFirestore.instance
+          .collection("Users")
+          .doc(uid)
+          .update({"status": newStatus});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newStatus == 0 ? "Student blocked" : "Student unblocked"),
+            backgroundColor: newStatus == 0 ? Colors.orange : Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ---------- DELETE STUDENT METHOD ----------
+  Future<void> deleteStudent(String uid) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection("Users")
+          .doc(uid)
+          .update({"status": -1});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Student deleted"),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ---------- UNDELETE STUDENT METHOD ----------
+  Future<void> undeleteStudent(String uid) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection("Users")
+          .doc(uid)
+          .update({"status": 1}); // Restore to active status
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Student restored"),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,9 +163,7 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text("No students found."),
-                  );
+                  return const Center(child: Text("No students found."));
                 }
 
                 final students = snapshot.data!.docs;
@@ -85,7 +172,9 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                   padding: const EdgeInsets.all(16),
                   itemCount: students.length,
                   itemBuilder: (context, index) {
-                    var student = students[index].data() as Map<String, dynamic>;
+                    var student =
+                        students[index].data() as Map<String, dynamic>;
+                    int status = student["status"] ?? 1;
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -100,19 +189,38 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Edit
-                           
+                            // Block/Unblock Button (only show if not deleted)
+                            if (status != -1)
+                              IconButton(
+                                icon: Icon(
+                                  status == 1 ? Icons.block : Icons.check_circle,
+                                  color: status == 1 ? Colors.orange : Colors.green,
+                                ),
+                                onPressed: () {
+                                  toggleBlockStudent(student["uid"], status);
+                                },
+                                tooltip: status == 1 ? "Block" : "Unblock",
+                              ),
 
-                            // Delete
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () async {
-                                await FirebaseFirestore.instance
-                                    .collection("Users")
-                                    .doc(student["uid"])
-                                    .update({"status": -1});
-                              },
-                            ),
+                            // Delete/Undelete Button
+                            if (status == -1)
+                              // Undelete button for deleted students
+                              IconButton(
+                                icon: const Icon(Icons.restore, color: Colors.blue),
+                                onPressed: () {
+                                  undeleteStudent(student["uid"]);
+                                },
+                                tooltip: "Restore",
+                              )
+                            else
+                              // Delete button for active/blocked students
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () {
+                                  deleteStudent(student["uid"]);
+                                },
+                                tooltip: "Delete",
+                              ),
                           ],
                         ),
                       ),
