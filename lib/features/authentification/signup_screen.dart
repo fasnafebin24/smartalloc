@@ -20,6 +20,15 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String _selectedUserType = 'student'; // Default to student
+  String? _selectedDepartment; // Department selection
+  List<String> _departments = []; // List to store departments from Firebase
+  bool _isLoadingDepartments = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDepartments();
+  }
 
   @override
   void dispose() {
@@ -28,6 +37,32 @@ class _SignupScreenState extends State<SignupScreen> {
     passwordCtrl.dispose();
     confirmPasswordCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadDepartments() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Department')
+          .get();
+      
+      setState(() {
+        _departments = snapshot.docs
+            .map((doc) => doc.data()['title'] as String)
+            .toList();
+        _isLoadingDepartments = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingDepartments = false;
+      });
+      if (mounted) {
+        showCustomSnackBar(
+          context,
+          message: 'Failed to load departments',
+          type: SnackType.error,
+        );
+      }
+    }
   }
 
   void _handleSignup() {
@@ -47,7 +82,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   'email': emailCtrl.text,
                   'password': passwordCtrl.text,
                   'role': _selectedUserType,
-                  'status':1
+                  'department': _selectedDepartment,
+                  'status': 1
                 })
                 .then((value) {
                   showCustomSnackBar(
@@ -59,11 +95,13 @@ class _SignupScreenState extends State<SignupScreen> {
                 });
           }).onError((error, stackTrace) {
             if (mounted) {
-            showCustomSnackBar(context, message:' account created failed', type: SnackType.success,);
-
-              
+              showCustomSnackBar(
+                context,
+                message: 'account created failed',
+                type: SnackType.error,
+              );
             }
-          },);
+          });
     }
   }
 
@@ -153,8 +191,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                             Icons.school,
                                             color:
                                                 _selectedUserType == 'student'
-                                                ? Colors.white
-                                                : Colors.grey[600],
+                                                    ? Colors.white
+                                                    : Colors.grey[600],
                                             size: 20,
                                           ),
                                           const SizedBox(width: 8),
@@ -163,8 +201,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                             style: TextStyle(
                                               color:
                                                   _selectedUserType == 'student'
-                                                  ? Colors.white
-                                                  : Colors.grey[600],
+                                                      ? Colors.white
+                                                      : Colors.grey[600],
                                               fontWeight: FontWeight.w600,
                                               fontSize: 15,
                                             ),
@@ -199,8 +237,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                             Icons.person,
                                             color:
                                                 _selectedUserType == 'teacher'
-                                                ? Colors.white
-                                                : Colors.grey[600],
+                                                    ? Colors.white
+                                                    : Colors.grey[600],
                                             size: 20,
                                           ),
                                           const SizedBox(width: 8),
@@ -209,8 +247,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                             style: TextStyle(
                                               color:
                                                   _selectedUserType == 'teacher'
-                                                  ? Colors.white
-                                                  : Colors.grey[600],
+                                                      ? Colors.white
+                                                      : Colors.grey[600],
                                               fontWeight: FontWeight.w600,
                                               fontSize: 15,
                                             ),
@@ -291,6 +329,70 @@ class _SignupScreenState extends State<SignupScreen> {
                               }
                               if (!value.contains('@')) {
                                 return "Enter a valid email";
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Department Dropdown
+                          DropdownButtonFormField<String>(
+                            value: _selectedDepartment,
+                            decoration: InputDecoration(
+                              labelText: "Department",
+                              prefixIcon: const Icon(Icons.business_outlined),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFE0E0E0),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF8C7CD4),
+                                  width: 2,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                            ),
+                            items: _isLoadingDepartments
+                                ? []
+                                : _departments
+                                    .map((department) => DropdownMenuItem(
+                                          value: department,
+                                          child: Text(department),
+                                        ))
+                                    .toList(),
+                            onChanged: _isLoadingDepartments
+                                ? null
+                                : (value) {
+                                    setState(() {
+                                      _selectedDepartment = value;
+                                    });
+                                  },
+                            hint: _isLoadingDepartments
+                                ? const Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text('Loading departments...'),
+                                    ],
+                                  )
+                                : const Text('Select department'),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return "Please select a department";
                               }
                               return null;
                             },

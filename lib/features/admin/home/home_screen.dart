@@ -14,11 +14,8 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  final TextEditingController searchCtrl = TextEditingController();
-
   @override
   void dispose() {
-    searchCtrl.dispose();
     super.dispose();
   }
 
@@ -89,25 +86,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ),
                 const SizedBox(height: 24),
                 
-                // Search Bar
-                TextField(
-                  controller: searchCtrl,
-                  decoration: InputDecoration(
-                    hintText: "Search projects, users...",
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFF8C7CD4)),
-                    suffixIcon: const Icon(Icons.filter_list, color: Colors.grey),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding:
-                        const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                
                 const Text(
                   "Quick Actions",
                   style: TextStyle(
@@ -166,40 +144,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         },
                       ),
                       adminActionCard(
-                        "Upload Abstract",
-                        Icons.description_outlined,
-                        const Color(0xFF9C27B0),
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const UploadAbstractPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      adminActionCard(
-                        "Edit Project",
-                        Icons.edit_outlined,
-                        const Color(0xFFE91E63),
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const EditProjectPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      adminActionCard(
-                        "Make Report",
-                        Icons.assessment_outlined,
+                        "Review",
+                        Icons.rate_review_outlined,
                         const Color(0xFF00BCD4),
                         () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const MakeReportPage(),
+                              builder: (context) => const ReviewPage(),
                             ),
                           );
                         },
@@ -218,32 +170,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         },
                       ),
                       adminActionCard(
-                        "Update Project",
-                        Icons.update_outlined,
-                        const Color(0xFFFF5722),
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const UpdateProjectPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      adminActionCard(
-                        "Approve Projects",
-                        Icons.check_circle_outline,
-                        const Color(0xFF4CAF50),
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ApproveProjectsPage(),
-                            ),
-                          );
-                        },
-                      ),
-                       adminActionCard(
                         "Logout",
                         Icons.logout,
                         const Color.fromARGB(255, 212, 5, 5),
@@ -324,127 +250,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 }
 
-
-
-// Upload Abstract Page
-class UploadAbstractPage extends StatefulWidget {
-  const UploadAbstractPage({super.key});
-
-  @override
-  State<UploadAbstractPage> createState() => _UploadAbstractPageState();
-}
-
-class _UploadAbstractPageState extends State<UploadAbstractPage> {
-  final TextEditingController abstractCtrl = TextEditingController();
-
-  @override
-  void dispose() {
-    abstractCtrl.dispose();
-    super.dispose();
-  }
-  
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Upload Abstract"),
-        backgroundColor: const Color(0xFF9C27B0),
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: abstractCtrl,
-              maxLines: 10,
-              decoration: InputDecoration(
-                labelText: "Project Abstract",
-                hintText: "Enter the abstract content here...",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                if (abstractCtrl.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Please enter abstract content!"),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Abstract uploaded successfully!"),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF9C27B0),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              child: const Text("Submit Abstract"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Edit Project Page
-class EditProjectPage extends StatelessWidget {
-  const EditProjectPage({super.key});
+// Review Page
+class ReviewPage extends StatelessWidget {
+  const ReviewPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Edit Project"),
-        backgroundColor: const Color(0xFFE91E63),
-        foregroundColor: Colors.white,
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 7,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: const Icon(Icons.folder, color: Color(0xFFE91E63)),
-              title: Text("Project ${index + 1}"),
-              subtitle: const Text("Tap to edit details"),
-              trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Opening Project ${index + 1} for editing")),
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// Make Report Page
-class MakeReportPage extends StatelessWidget {
-  const MakeReportPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Make Report"),
+        title: const Text("Review"),
         backgroundColor: const Color(0xFF00BCD4),
         foregroundColor: Colors.white,
       ),
@@ -454,43 +268,43 @@ class MakeReportPage extends StatelessWidget {
           children: [
             Card(
               child: ListTile(
-                leading: const Icon(Icons.description, color: Color(0xFF00BCD4)),
-                title: const Text("Generate Monthly Report"),
+                leading: const Icon(Icons.assignment, color: Color(0xFF00BCD4)),
+                title: const Text("Review Pending Projects"),
                 trailing: ElevatedButton(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Generating monthly report...")),
+                      const SnackBar(content: Text("Opening pending projects...")),
                     );
                   },
-                  child: const Text("Generate"),
+                  child: const Text("Review"),
                 ),
               ),
             ),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.bar_chart, color: Color(0xFF00BCD4)),
-                title: const Text("Project Statistics Report"),
+                leading: const Icon(Icons.feedback, color: Color(0xFF00BCD4)),
+                title: const Text("Review Student Submissions"),
                 trailing: ElevatedButton(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Generating statistics report...")),
+                      const SnackBar(content: Text("Opening submissions...")),
                     );
                   },
-                  child: const Text("Generate"),
+                  child: const Text("Review"),
                 ),
               ),
             ),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.people, color: Color(0xFF00BCD4)),
-                title: const Text("User Activity Report"),
+                leading: const Icon(Icons.comment, color: Color(0xFF00BCD4)),
+                title: const Text("Review Feedback & Comments"),
                 trailing: ElevatedButton(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Generating activity report...")),
+                      const SnackBar(content: Text("Opening feedback...")),
                     );
                   },
-                  child: const Text("Generate"),
+                  child: const Text("Review"),
                 ),
               ),
             ),
@@ -535,93 +349,4 @@ class ViewProjectsPage extends StatelessWidget {
       ),
     );
   }
-}
-
-// Update Project Page
-class UpdateProjectPage extends StatelessWidget {
-  const UpdateProjectPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Update Project"),
-        backgroundColor: const Color.fromARGB(255, 119, 78, 65),
-        foregroundColor: Colors.white,
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 7,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: const Icon(Icons.update, color: Color(0xFFFF5722)),
-              title: Text("Project ${index + 1}"),
-              subtitle: const Text("Last updated: 2 days ago"),
-              trailing: IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Updating Project ${index + 1}")),
-                  );
-                },
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// Approve Projects Page
-class ApproveProjectsPage extends StatelessWidget {
-  const ApproveProjectsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Approve Projects"),
-        backgroundColor: const Color(0xFF4CAF50),
-        foregroundColor: Colors.white,
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: const Icon(Icons.pending_actions, color: Colors.orange),
-              title: Text("Project ${index + 1}"),
-              subtitle: const Text("Pending approval"),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.check_circle, color: Colors.green),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Project ${index + 1} approved!")),
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.cancel, color: Colors.red),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Project ${index + 1} rejected!")),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
+}  
