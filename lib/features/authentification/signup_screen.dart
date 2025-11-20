@@ -74,47 +74,128 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  void _handleSignup() {
-    if (_formKey.currentState!.validate()) {
-      FirebaseAuth.instance
+  void _handleSignup() async {
+  if (_formKey.currentState!.validate()) {
+    try {
+      // First, check if user already exists in Firestore
+      final userQuery = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('email', isEqualTo: emailCtrl.text)
+          .get();
+
+      if (userQuery.docs.isNotEmpty) {
+        final userData = userQuery.docs.first.data();
+        final status = userData['status'];
+
+        // Check status and handle accordingly
+        if (status == 1) {
+          // User already exists and is active
+          if (mounted) {
+            showCustomSnackBar(
+              context,
+              message: 'User already exists with this email',
+              type: SnackType.error,
+            );
+          }
+          return;
+        } else if (status == 0) {
+          // User account is blocked
+          if (mounted) {
+            showCustomSnackBar(
+              context,
+              message: 'This account is blocked. Contact administrator.',
+              type: SnackType.error,
+            );
+          }
+          return;
+        } else if (status == -1) {
+          // User was deleted, delete old data and allow recreation
+         final oldUid = userData['uid'];
+          final oldEmail = userData['email'];
+          final oldPassword = userData['password'];
+          
+          try {
+            // Sign in with old credentials to delete auth user
+            final oldUserCredential = await FirebaseAuth.instance
+                .signInWithEmailAndPassword(
+                  email: oldEmail,
+                  password: oldPassword,
+                );
+            
+            // Delete the auth user
+            await oldUserCredential.user?.delete();
+            
+            // Delete Firestore document
+            await FirebaseFirestore.instance
+                .collection('Users')
+                .doc(oldUid)
+                .delete();
+          } catch (e) {
+            print('Error deleting old user: $e');
+            // If deletion fails, still try to proceed with new account creation
+          }
+        }
+      }
+
+      // Create new user with email and password
+      final credential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: emailCtrl.text,
             password: passwordCtrl.text,
-          )
-          .then((value) {
-            FirebaseFirestore.instance
-                .collection('Users')
-                .doc(value.user?.uid)
-                .set({
-                  'uid': value.user?.uid,
-                  'name': nameCtrl.text,
-                  'email': emailCtrl.text,
-                  'password': passwordCtrl.text,
-                  'role': _selectedUserType,
-                  'department': _selectedDepartment,
-                  'departmentcode': _selectedDepartmentcode,
-                  'status': 1,
-                })
-                .then((value) {
-                  showCustomSnackBar(
-                    context,
-                    message: 'account is created',
-                    type: SnackType.success,
-                  );
-                  Navigator.pop(context);
-                });
-          })
-          .onError((error, stackTrace) {
-            if (mounted) {
-              showCustomSnackBar(
-                context,
-                message: 'account created failed',
-                type: SnackType.error,
-              );
-            }
+          );
+
+      // Create user document in Firestore
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(credential.user?.uid)
+          .set({
+            'uid': credential.user?.uid,
+            'name': nameCtrl.text,
+            'email': emailCtrl.text,
+            'password': passwordCtrl.text, // Consider removing this for security
+            'role': _selectedUserType,
+            'department': _selectedDepartment,
+            'departmentcode': _selectedDepartmentcode,
+            'status': 1,
           });
+
+      if (mounted) {
+        showCustomSnackBar(
+          context,
+          message: 'Account created successfully',
+          type: SnackType.success,
+        );
+        Navigator.pop(context);
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        String errorMessage = 'Account creation failed';
+        
+        if (e.code == 'email-already-in-use') {
+          errorMessage = 'This email is already registered';
+        } else if (e.code == 'weak-password') {
+          errorMessage = 'Password is too weak';
+        } else if (e.code == 'invalid-email') {
+          errorMessage = 'Invalid email address';
+        }
+
+        showCustomSnackBar(
+          context,
+          message: errorMessage,
+          type: SnackType.error,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        showCustomSnackBar(
+          context,
+          message: 'An error occurred: ${e.toString()}',
+          type: SnackType.error,
+        );
+      }
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
