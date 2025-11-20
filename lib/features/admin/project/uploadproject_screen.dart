@@ -18,6 +18,8 @@ class UploadProjectPage extends StatefulWidget {
 class _UploadProjectPageState extends State<UploadProjectPage> {
   final TextEditingController projectNameCtrl = TextEditingController();
   final TextEditingController descCtrl = TextEditingController();
+  final TextEditingController startYearCtrl = TextEditingController();
+  final TextEditingController endYearCtrl = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   String? abstractFileName;
@@ -28,6 +30,9 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
   String? selectedTeacherId;
   String? selectedTeacherName;
   String? selectedTeacherEmail;
+  String? _selectedDepartment;
+  List<String> _departments = []; // List to store departments from Firebase
+  bool _isLoadingDepartments = true;
 
   final List<String> domains = [
     'Flutter',
@@ -37,7 +42,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
     'Node.js',
     'Python',
     'Java',
-    'Other'
+    'Other',
   ];
 
   List<Map<String, dynamic>> teachers = [];
@@ -48,8 +53,33 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
   void initState() {
     super.initState();
     fetchTeachers();
+     _loadDepartments();
   }
-
+Future<void> _loadDepartments() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Department')
+          .get();
+      
+      setState(() {
+        _departments = snapshot.docs
+            .map((doc) => doc.data()['title'] as String)
+            .toList();
+        _isLoadingDepartments = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingDepartments = false;
+      });
+      if (mounted) {
+        showCustomSnackBar(
+          context,
+          message: 'Failed to load departments',
+          type: SnackType.error,
+        );
+      }
+    }
+  }
   // Fetch teachers from Firebase
   Future<void> fetchTeachers() async {
     try {
@@ -60,7 +90,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
           .get();
 
       List<Map<String, dynamic>> fetchedTeachers = [];
-      
+
       for (var doc in snapshot.docs) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
         fetchedTeachers.add({
@@ -104,7 +134,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
 
       if (result != null) {
         PlatformFile file = result.files.first;
-        
+
         setState(() {
           if (isAbstract) {
             abstractFileName = file.name;
@@ -115,10 +145,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
           }
         });
 
-        _showSnackBar(
-          "${file.name} selected successfully!", 
-          Colors.green
-        );
+        _showSnackBar("${file.name} selected successfully!", Colors.green);
       }
     } catch (e) {
       _showSnackBar("Error picking file: ${e.toString()}", Colors.red);
@@ -134,6 +161,14 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
 
     if (descCtrl.text.trim().isEmpty) {
       _showSnackBar("Please enter project description", Colors.red);
+      return false;
+    }
+    if (startYearCtrl.text.trim().isEmpty) {
+      _showSnackBar("Please enter Start Year", Colors.red);
+      return false;
+    }
+    if (endYearCtrl.text.trim().isEmpty) {
+      _showSnackBar("Please enter Passout Year", Colors.red);
       return false;
     }
 
@@ -156,6 +191,10 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
       _showSnackBar("Please select a teacher", Colors.red);
       return false;
     }
+    if (_selectedDepartment == null) {
+      _showSnackBar("Please select a Department", Colors.red);
+      return false;
+    }
 
     return true;
   }
@@ -163,18 +202,22 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
   // Submit project to Firebase
   Future<void> submitProject() async {
     if (!validateForm()) return;
-    var uuid=Uuid();
-    var id  =uuid.v4();
+    var uuid = Uuid();
+    var id = uuid.v4();
 
     setState(() {
       isSubmitting = true;
     });
-var abstracturl= await CloudneryUploader().uploadFile(XFile(abstractFilePath!));
-var finalprojecturl= await CloudneryUploader().uploadFile(XFile(finalProjectFilePath!));
+    var abstracturl = await CloudneryUploader().uploadFile(
+      XFile(abstractFilePath!),
+    );
+    var finalprojecturl = await CloudneryUploader().uploadFile(
+      XFile(finalProjectFilePath!),
+    );
     try {
       // Create project document in Firestore
       Map<String, dynamic> projectData = {
-        'id':id,
+        'id': id,
         'projectName': projectNameCtrl.text.trim(),
         'description': descCtrl.text.trim(),
         'domain': selectedDomain,
@@ -184,43 +227,44 @@ var finalprojecturl= await CloudneryUploader().uploadFile(XFile(finalProjectFile
         'abstractfileurl': abstracturl,
         'finalProjectFileurl': finalprojecturl,
         'uploadAt': FieldValue.serverTimestamp(),
-        'status': 'pending', 
+        'batch': '${startYearCtrl.text}-${endYearCtrl.text}',
+        'startyear': startYearCtrl.text,
+        'endyear': endYearCtrl.text,
+        'department': _selectedDepartment,
+        'status': 'pending',
       };
 
       // Add to Firestore
-        _firestore
-          .collection('Projects').doc(id)
-          .set(projectData).then((value) {
-           
-      _showSnackBar(
-        "Project uploaded successfully! ", 
-        Colors.green
-      );// Wait a moment to show success message
-     
+      _firestore
+          .collection('Projects')
+          .doc(id)
+          .set(projectData)
+          .then((value) {
+            _showSnackBar(
+              "Project uploaded successfully! ",
+              Colors.green,
+            ); // Wait a moment to show success message
 
-      // Navigate back
-      if (mounted) {
-        Navigator.pop(context, true); // Return true to indicate success
-      }
-          },).onError((error, stackTrace) {
-              setState(() {
-        isSubmitting = false;
-      });
-      showCustomSnackBar(context, message: "failed", type: SnackType.error);
-
-          },);
-
-     
-
-      
+            // Navigate back
+            if (mounted) {
+              Navigator.pop(context, true); // Return true to indicate success
+            }
+          })
+          .onError((error, stackTrace) {
+            setState(() {
+              isSubmitting = false;
+            });
+            showCustomSnackBar(
+              context,
+              message: "failed",
+              type: SnackType.error,
+            );
+          });
     } catch (e) {
       setState(() {
         isSubmitting = false;
       });
-      _showSnackBar(
-        "Error uploading project: ${e.toString()}", 
-        Colors.red
-      );
+      _showSnackBar("Error uploading project: ${e.toString()}", Colors.red);
     }
   }
 
@@ -363,7 +407,6 @@ var finalprojecturl= await CloudneryUploader().uploadFile(XFile(finalProjectFile
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                               
                               ],
                             ),
                           );
@@ -386,9 +429,7 @@ var finalprojecturl= await CloudneryUploader().uploadFile(XFile(finalProjectFile
                             SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                             SizedBox(width: 12),
                             Text("Loading teachers..."),
@@ -400,6 +441,104 @@ var finalprojecturl= await CloudneryUploader().uploadFile(XFile(finalProjectFile
                               : "Choose a teacher",
                         ),
                 ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: startYearCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: "Start Year",
+                          hintText: "ex : 2019",
+
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: TextField(
+                        controller: endYearCtrl,
+                        decoration: InputDecoration(
+                          labelText: "Passout Ya=ear",
+                          hintText: "ex : 2022",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16,),
+                DropdownButtonFormField<String>(
+                            value: _selectedDepartment,
+                            decoration: InputDecoration(
+                              labelText: "Department",
+                              prefixIcon: const Icon(Icons.business_outlined),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFE0E0E0),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF8C7CD4),
+                                  width: 2,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                            ),
+                            items: _isLoadingDepartments
+                                ? []
+                                : _departments
+                                    .map((department) => DropdownMenuItem(
+                                          value: department,
+                                          child: Text(department),
+                                        ))
+                                    .toList(),
+                            onChanged: _isLoadingDepartments
+                                ? null
+                                : (value) {
+                                    setState(() {
+                                      _selectedDepartment = value;
+                                    });
+                                  },
+                            hint: _isLoadingDepartments
+                                ? const Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text('Loading departments...'),
+                                    ],
+                                  )
+                                : const Text('Select department'),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return "Please select a department";
+                              }
+                              return null;
+                            },
+                          ),
                 const SizedBox(height: 24),
 
                 // PDFs Section Header

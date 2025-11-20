@@ -5,6 +5,7 @@ import 'package:smartalloc/features/admin/manage/manageteacher_screen.dart';
 import 'package:smartalloc/features/authentification/login_screen.dart';
 
 import '../project/uploadproject_screen.dart';
+import '../project/viewproject_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -315,38 +316,3 @@ class ReviewPage extends StatelessWidget {
   }
 }
 
-// View Projects Page
-class ViewProjectsPage extends StatelessWidget {
-  const ViewProjectsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("View Projects"),
-        backgroundColor: const Color(0xFF673AB7),
-        foregroundColor: Colors.white,
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 7,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: const Icon(Icons.folder_open, color: Color(0xFF673AB7)),
-              title: Text("Project ${index + 1}"),
-              subtitle: const Text("4.5 ⭐ • 12 reviews"),
-              trailing: const Icon(Icons.visibility),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Viewing Project ${index + 1}")),
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-}  
