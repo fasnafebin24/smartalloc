@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:smartalloc/utils/helper/helper_cloudinary.dart';
 import 'package:smartalloc/utils/methods/customsnackbar.dart';
-import 'dart:io';
 
 import 'package:uuid/uuid.dart';
 
@@ -31,7 +30,8 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
   String? selectedTeacherName;
   String? selectedTeacherEmail;
   String? _selectedDepartment;
-  List<String> _departments = []; // List to store departments from Firebase
+  String? _selectedDepartmentCode;
+  List<Map<String,dynamic>> _departments = []; // List to store departments from Firebase
   bool _isLoadingDepartments = true;
 
   final List<String> domains = [
@@ -63,7 +63,10 @@ Future<void> _loadDepartments() async {
       
       setState(() {
         _departments = snapshot.docs
-            .map((doc) => doc.data()['title'] as String)
+            .map((doc) => {
+              'code':doc.data()['code'] as String,
+              'title':doc.data()['title'] as String,
+              })
             .toList();
         _isLoadingDepartments = false;
       });
@@ -87,6 +90,7 @@ Future<void> _loadDepartments() async {
           .collection('Users')
           .where('role', isEqualTo: 'teacher')
           .where('status', isEqualTo: 1)
+          .where('department', isEqualTo: _selectedDepartmentCode)
           .get();
 
       List<Map<String, dynamic>> fetchedTeachers = [];
@@ -231,6 +235,7 @@ Future<void> _loadDepartments() async {
         'startyear': startYearCtrl.text,
         'endyear': endYearCtrl.text,
         'department': _selectedDepartment,
+        'departmentcode': _selectedDepartmentCode,
         'status': 'pending',
       };
 
@@ -378,6 +383,73 @@ Future<void> _loadDepartments() async {
                     });
                   },
                 ),
+                  SizedBox(height: 16,),
+                DropdownButtonFormField<String>(
+                            initialValue: _selectedDepartment,
+                            decoration: InputDecoration(
+                              labelText: "Department",
+                              prefixIcon: const Icon(Icons.business_outlined),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFE0E0E0),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF8C7CD4),
+                                  width: 2,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                            ),
+                            items: _isLoadingDepartments
+                                ? []
+                                : _departments
+                                    .map((department) => DropdownMenuItem<String>(
+                                          value: department['title'],
+                                          child: Text(department['title']),
+                                        ))
+                                    .toList(),
+                            onChanged: _isLoadingDepartments
+                                ? null
+                                : (value) {
+                                   var deprt = _departments.firstWhere(
+                              (t) => t['title'] == value,
+                            );
+                                    setState(() {
+                                      _selectedDepartment = value;
+                                      _selectedDepartmentCode = deprt['code'];
+                                    });
+                                    fetchTeachers();
+                                  },
+                            hint: _isLoadingDepartments
+                                ? const Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text('Loading departments...'),
+                                    ],
+                                  )
+                                : const Text('Select department'),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return "Please select a department";
+                              }
+                              return null;
+                            },
+                          ),
                 const SizedBox(height: 16),
 
                 // Teacher Selection Dropdown
@@ -477,68 +549,7 @@ Future<void> _loadDepartments() async {
                     ),
                   ],
                 ),
-                SizedBox(height: 16,),
-                DropdownButtonFormField<String>(
-                            value: _selectedDepartment,
-                            decoration: InputDecoration(
-                              labelText: "Department",
-                              prefixIcon: const Icon(Icons.business_outlined),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFE0E0E0),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF8C7CD4),
-                                  width: 2,
-                                ),
-                              ),
-                              filled: true,
-                              fillColor: Colors.grey[50],
-                            ),
-                            items: _isLoadingDepartments
-                                ? []
-                                : _departments
-                                    .map((department) => DropdownMenuItem(
-                                          value: department,
-                                          child: Text(department),
-                                        ))
-                                    .toList(),
-                            onChanged: _isLoadingDepartments
-                                ? null
-                                : (value) {
-                                    setState(() {
-                                      _selectedDepartment = value;
-                                    });
-                                  },
-                            hint: _isLoadingDepartments
-                                ? const Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                      SizedBox(width: 12),
-                                      Text('Loading departments...'),
-                                    ],
-                                  )
-                                : const Text('Select department'),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return "Please select a department";
-                              }
-                              return null;
-                            },
-                          ),
+              
                 const SizedBox(height: 24),
 
                 // PDFs Section Header

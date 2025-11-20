@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +23,9 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscureConfirmPassword = true;
   String _selectedUserType = 'student'; // Default to student
   String? _selectedDepartment; // Department selection
-  List<String> _departments = []; // List to store departments from Firebase
+  String? _selectedDepartmentcode; // Department selection
+  List<Map<String, String>> _departments =
+      []; // List to store departments from Firebase
   bool _isLoadingDepartments = true;
 
   @override
@@ -44,10 +48,15 @@ class _SignupScreenState extends State<SignupScreen> {
       final snapshot = await FirebaseFirestore.instance
           .collection('Department')
           .get();
-      
+
       setState(() {
         _departments = snapshot.docs
-            .map((doc) => doc.data()['title'] as String)
+            .map(
+              (doc) => {
+                'code': doc.data()['code'] as String,
+                'title': doc.data()['title'] as String,
+              },
+            )
             .toList();
         _isLoadingDepartments = false;
       });
@@ -83,7 +92,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   'password': passwordCtrl.text,
                   'role': _selectedUserType,
                   'department': _selectedDepartment,
-                  'status': 1
+                  'departmentcode': _selectedDepartmentcode,
+                  'status': 1,
                 })
                 .then((value) {
                   showCustomSnackBar(
@@ -93,7 +103,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   );
                   Navigator.pop(context);
                 });
-          }).onError((error, stackTrace) {
+          })
+          .onError((error, stackTrace) {
             if (mounted) {
               showCustomSnackBar(
                 context,
@@ -191,8 +202,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                             Icons.school,
                                             color:
                                                 _selectedUserType == 'student'
-                                                    ? Colors.white
-                                                    : Colors.grey[600],
+                                                ? Colors.white
+                                                : Colors.grey[600],
                                             size: 20,
                                           ),
                                           const SizedBox(width: 8),
@@ -201,8 +212,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                             style: TextStyle(
                                               color:
                                                   _selectedUserType == 'student'
-                                                      ? Colors.white
-                                                      : Colors.grey[600],
+                                                  ? Colors.white
+                                                  : Colors.grey[600],
                                               fontWeight: FontWeight.w600,
                                               fontSize: 15,
                                             ),
@@ -237,8 +248,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                             Icons.person,
                                             color:
                                                 _selectedUserType == 'teacher'
-                                                    ? Colors.white
-                                                    : Colors.grey[600],
+                                                ? Colors.white
+                                                : Colors.grey[600],
                                             size: 20,
                                           ),
                                           const SizedBox(width: 8),
@@ -247,8 +258,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                             style: TextStyle(
                                               color:
                                                   _selectedUserType == 'teacher'
-                                                      ? Colors.white
-                                                      : Colors.grey[600],
+                                                  ? Colors.white
+                                                  : Colors.grey[600],
                                               fontWeight: FontWeight.w600,
                                               fontSize: 15,
                                             ),
@@ -363,15 +374,24 @@ class _SignupScreenState extends State<SignupScreen> {
                             items: _isLoadingDepartments
                                 ? []
                                 : _departments
-                                    .map((department) => DropdownMenuItem(
-                                          value: department,
-                                          child: Text(department),
-                                        ))
-                                    .toList(),
+                                      .map(
+                                        (department) => DropdownMenuItem(
+                                          value: department['title'],
+                                          child: Text(
+                                            department['title'] ?? '',
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
                             onChanged: _isLoadingDepartments
                                 ? null
                                 : (value) {
+                                    var dept = _departments.firstWhere(
+                                      (t) => t['title'] == value,
+                                    );
+
                                     setState(() {
+                                      _selectedDepartmentcode = dept['code'];
                                       _selectedDepartment = value;
                                     });
                                   },

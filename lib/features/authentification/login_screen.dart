@@ -1,4 +1,4 @@
-import 'dart:developer';
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartalloc/features/admin/home/home_screen.dart';
 import 'package:smartalloc/features/home/home%20_screen.dart';
 import 'package:smartalloc/features/authentification/signup_screen.dart';
-import 'package:smartalloc/features/landing/landing_screen.dart';
 import 'package:smartalloc/features/teacher/bottomnav/dashboard/bottom_nav_screen.dart';
 import 'package:smartalloc/utils/methods/customsnackbar.dart';
 import 'package:smartalloc/utils/variables/globalvariables.dart';
@@ -24,87 +23,160 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
-  
+  bool _isLoading = false; // Loading state
 
   @override
-  void dispose() { 
+  void dispose() {
     emailCtrl.dispose();
-    passwordCtrl.dispose(); 
+    passwordCtrl.dispose();
     super.dispose();
   }
-  Future<void> saveUserData(String uid, String role,String department) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setString('uid', uid.trim());
-  await prefs.setString('role', role.trim());
-  await prefs.setString('department', department.trim());
 
-}
+  Future<void> saveUserData(String uid, String role, String department) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('uid', uid.trim());
+    await prefs.setString('role', role.trim());
+    await prefs.setString('department', department.trim());
+  }
 
+  void _handleLogin() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
 
- void _handleLogin() async {
-  if (_formKey.currentState!.validate()) {
-    try {
-      final value = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(
-            email: emailCtrl.text,
-            password: passwordCtrl.text,
+      try {
+        final value = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: emailCtrl.text.trim(),
+          password: passwordCtrl.text.trim(),
+        );
+
+        final uid = value.user?.uid;
+
+        DocumentSnapshot doc = await FirebaseFirestore.instance
+            .collection("Users")
+            .doc(uid)
+            .get();
+
+        if (doc.exists) {
+          var data = doc.data() as Map<String, dynamic>;
+          if (data['status'] == 1) {
+            String role = data['role'];
+            String department = data['departmentcode']??'';
+            guserid = uid;
+            gdepartment = department;
+
+            // Save uid & role locally
+            await saveUserData(uid!, role, department);
+
+            setState(() {
+              _isLoading = false;
+            });
+
+            // Navigate based on role
+            if (role == 'student') {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => HomeScreen()),
+              );
+            } else if (role == 'teacher') {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => TeacherDashboard()),
+              );
+            } else if (role == 'admin') {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => AdminHomeScreen()),
+              );
+            } else {
+              showCustomSnackBar(
+                context,
+                message: "Unknown role!",
+                type: SnackType.error,
+              );
+            }
+          } else {
+            if (data['status'] == -1) {
+              showCustomSnackBar(
+                context,
+                message: 'Account deleted',
+                type: SnackType.error,
+              );
+            } else if (data['status'] == 0) {
+              showCustomSnackBar(
+                context,
+                message: 'Account blocked by admin',
+                type: SnackType.error,
+              );
+            }else{
+              value.user?.delete();
+               showCustomSnackBar(
+            context,
+            message: 'User not found so Create new User with same email and password'.toUpperCase(),
+            type: SnackType.error,
           );
-
-      final uid = value.user?.uid;
-
-      DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection("Users")
-          .doc(uid)
-          .get();
-
-      if (doc.exists) {
-        var data = doc.data() as Map<String, dynamic>;
-        String role = data['role'];
-        String department = data['department'];
-        guserid = uid;
-        gdepartment = department;
+            }
+          }
+        } else {
+          setState(() {
+            _isLoading = false;
+          });
+          showCustomSnackBar(
+            context,
+            message: 'User not found',
+            type: SnackType.error,
+          );
+        }
+      } on FirebaseAuthException catch (e) {
         setState(() {
-          
+          _isLoading = false;
         });
-        // Save uid & role locally
-        await saveUserData(uid!, role,department);
 
-        // Navigate based on role
-        if (role == 'student') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => HomeScreen()),
-          );
-        } 
-        else if (role == 'teacher') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => TeacherDashboard()),
-          );
-        } 
-        else if (role == 'admin') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => AdminHomeScreen()),
-          );
-        } 
-        else {
-          showCustomSnackBar(context,
-              message: "Unknown role!", type: SnackType.error);
+        String errorMessage;
+
+        // Handle specific Firebase Auth errors
+        switch (e.code) {
+          case 'user-not-found':
+            errorMessage = 'No user found with this email';
+            break;
+          case 'wrong-password':
+            errorMessage = 'Invalid credentials. Please check your password';
+            break;
+          case 'invalid-email':
+            errorMessage = 'Invalid email address';
+            break;
+          case 'user-disabled':
+            errorMessage = 'This account has been disabled';
+            break;
+          case 'too-many-requests':
+            errorMessage = 'Too many attempts. Please try again later';
+            break;
+          case 'invalid-credential':
+            errorMessage =
+                'Invalid credentials. Please check your email and password';
+            break;
+          default:
+            errorMessage = 'Login failed. Please check your credentials';
         }
 
-      } else {
-        showCustomSnackBar(context,
-            message: 'User not found', type: SnackType.error);
+        showCustomSnackBar(
+          context,
+          message: errorMessage,
+          type: SnackType.error,
+        );
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+        showCustomSnackBar(
+          context,
+          message: 'An error occurred. Please try again',
+          type: SnackType.error,
+        );
       }
-
-    } catch (e) {
-      showCustomSnackBar(context,
-          message: e.toString(), type: SnackType.error);
     }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -161,6 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           // Email Field
                           TextFormField(
                             controller: emailCtrl,
+                            enabled: !_isLoading,
                             decoration: InputDecoration(
                               labelText: "Email",
                               prefixIcon: const Icon(Icons.email_outlined),
@@ -200,6 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextFormField(
                             controller: passwordCtrl,
                             obscureText: _obscurePassword,
+                            enabled: !_isLoading,
                             decoration: InputDecoration(
                               labelText: "Password",
                               prefixIcon: const Icon(Icons.lock_outlined),
@@ -245,31 +319,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
 
-                          // Forgot Password
-                          // Align(
-                          //   alignment: Alignment.centerRight,
-                          //   child: TextButton(
-                          //     onPressed: () {
-                          //       // Handle forgot password
-                          //     },
-                          //     child: const Text(
-                          //       'Forgot Password?',
-                          //       style: TextStyle(
-                          //         color: Color(0xFF8C7CD4),
-                          //         fontWeight: FontWeight.w600,
-                          //       ),
-                          //     ),
-                          //   ),
-                          // ),
-
                           const SizedBox(height: 24),
 
-                          // Login Button
+                          // Login Button with Loading Indicator
                           SizedBox(
                             width: double.infinity,
                             height: 50,
                             child: ElevatedButton(
-                              onPressed: _handleLogin,
+                              onPressed: _isLoading ? null : _handleLogin,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF8C7CD4),
                                 foregroundColor: Colors.white,
@@ -277,15 +334,27 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 elevation: 2,
+                                disabledBackgroundColor: const Color(
+                                  0xFF8C7CD4,
+                                ).withOpacity(0.6),
                               ),
-                              child: const Text(
-                                "LOGIN",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : const Text(
+                                      "LOGIN",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
                             ),
                           ),
 
@@ -303,18 +372,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => SignupScreen(),
-                                    ),
-                                  );
-                                },
-                                child: const Text(
+                                onTap: _isLoading
+                                    ? null
+                                    : () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                SignupScreen(),
+                                          ),
+                                        );
+                                      },
+                                child: Text(
                                   " Sign Up",
                                   style: TextStyle(
-                                    color: Color(0xFF8C7CD4),
+                                    color: _isLoading
+                                        ? Colors.grey
+                                        : const Color(0xFF8C7CD4),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
@@ -335,5 +409,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-// Teacher Dashboard Screen (Create this file separately)
