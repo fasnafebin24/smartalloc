@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartalloc/features/authentification/login_screen.dart';
 
+import '../../home/home_scree.dart';
+
 // Main Teacher Dashboard with Bottom Navigation
 class TeacherDashboard extends StatefulWidget {
   const TeacherDashboard({super.key});
@@ -11,27 +13,41 @@ class TeacherDashboard extends StatefulWidget {
 }
 
 class _TeacherDashboardState extends State<TeacherDashboard> {
-  int _currentIndex = 0;
-
-  final List<Widget> _screens = [
-    const DashboardScreen(),
+  int currentIndex = 0;
+   List<Widget> screens=[];
+gotoproject() {
+  currentIndex=1;
+  setState(() {
+    
+  });
+}
+  @override
+  void initState() {
+     screens = [
+     TeachHomeScreen(chnageindex: () {
+      gotoproject();
+     },),
     const ProjectsScreen(),
     const StudentsScreen(),
     const SettingsScreen(),
   ];
+    super.initState();
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: screens[currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: _currentIndex,
+        currentIndex: currentIndex,
         selectedItemColor: const Color(0xFF8C7CD4),
         unselectedItemColor: Colors.grey,
         onTap: (index) {
           setState(() {
-            _currentIndex = index;
+            currentIndex = index;
           });
         },
         items: const [
@@ -57,163 +73,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   }
 }
 
-// 1. Dashboard Screen
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: double.infinity,
-      width: double.infinity,    
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF8C7CD4), Color(0xFFE8E4F3)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Teacher Dashboard',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Manage your projects',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, color: Color(0xFF8C7CD4)),
-                  ),
-                ],
-              ),
-            ),  
-
-            // Dashboard Cards
-            Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: GridView.count(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: .76,
-                    children: [
-                      _dashboardCard(
-                        'Projects',
-                        '24',
-                        Icons.folder,
-                        Colors.orange,
-                      ),
-                      _dashboardCard(
-                        'Students',
-                        '156',
-                        Icons.people,
-                        Colors.blue,
-                      ),
-                      _dashboardCard(
-                        'Pending Reviews',
-                        '12',
-                        Icons.rate_review,
-                        Colors.purple,
-                      ),
-                      _dashboardCard(
-                        'Completed',
-                        '89',
-                        Icons.check_circle,
-                        Colors.green,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _dashboardCard(String title, String count, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 32),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              count,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+ 
 
 // 2. Projects Screen
 class ProjectsScreen extends StatelessWidget {

@@ -8,8 +8,9 @@ import 'package:smartalloc/features/admin/home/home_screen.dart';
 import 'package:smartalloc/features/home/home%20_screen.dart';
 import 'package:smartalloc/features/authentification/signup_screen.dart';
 import 'package:smartalloc/features/landing/landing_screen.dart';
-import 'package:smartalloc/features/teacher/bottomnav/bottom_nav_screen.dart';
+import 'package:smartalloc/features/teacher/bottomnav/dashboard/bottom_nav_screen.dart';
 import 'package:smartalloc/utils/methods/customsnackbar.dart';
+import 'package:smartalloc/utils/variables/globalvariables.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,10 +32,12 @@ class _LoginScreenState extends State<LoginScreen> {
     passwordCtrl.dispose(); 
     super.dispose();
   }
-  Future<void> saveUserData(String uid, String role) async {
+  Future<void> saveUserData(String uid, String role,String department) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setString('uid', uid);
-  await prefs.setString('role', role);
+  await prefs.setString('uid', uid.trim());
+  await prefs.setString('role', role.trim());
+  await prefs.setString('department', department.trim());
+
 }
 
 
@@ -57,9 +60,14 @@ class _LoginScreenState extends State<LoginScreen> {
       if (doc.exists) {
         var data = doc.data() as Map<String, dynamic>;
         String role = data['role'];
-
+        String department = data['department'];
+        guserid = uid;
+        gdepartment = department;
+        setState(() {
+          
+        });
         // Save uid & role locally
-        await saveUserData(uid!, role);
+        await saveUserData(uid!, role,department);
 
         // Navigate based on role
         if (role == 'student') {

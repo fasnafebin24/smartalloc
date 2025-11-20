@@ -1,0 +1,2 @@
+String? guserid;
+String? gdepartment;
