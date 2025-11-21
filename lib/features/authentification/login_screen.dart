@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartalloc/features/admin/home/home_screen.dart';
+import 'package:smartalloc/features/authentification/model/user_model.dart';
 import 'package:smartalloc/features/home/home%20_screen.dart';
 import 'package:smartalloc/features/authentification/signup_screen.dart';
 import 'package:smartalloc/features/teacher/bottomnav/dashboard/teach_bottom_nav_screen.dart';
@@ -65,6 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
             String department = data['departmentcode']??'';
             guserid = uid;
             gdepartment = department;
+            userdetails = UserModel.fromJson(data);
 
             // Save uid & role locally
             await saveUserData(uid!, role, department);
