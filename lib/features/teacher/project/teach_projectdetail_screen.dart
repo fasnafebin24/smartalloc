@@ -1,12 +1,13 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:smartalloc/features/teacher/project/model/project_model.dart';
 import 'package:smartalloc/utils/contants/colors.dart';
+import 'package:smartalloc/utils/methods/customsnackbar.dart';
+import 'package:smartalloc/utils/variables/globalvariables.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-
 
 // Project Details Screen
 class ProjectDetailsScreen extends StatefulWidget {
@@ -21,11 +22,11 @@ class ProjectDetailsScreen extends StatefulWidget {
 class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   final TextEditingController _reviewController = TextEditingController();
   late String _projectStatus;
-
+  int _rating = 0;
   @override
   void initState() {
     super.initState();
-    _projectStatus = widget.project.status??'prending';
+    _projectStatus = widget.project.status ?? 'prending';
   }
 
   @override
@@ -40,11 +41,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     if (await canLaunchUrl(pdfUri)) {
       await launchUrl(pdfUri, mode: LaunchMode.externalApplication);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Downloading $fileName...'), backgroundColor: Colors.green),
+        SnackBar(
+          content: Text('Downloading $fileName...'),
+          backgroundColor: Colors.green,
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not download PDF'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Could not download PDF'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -88,10 +95,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   }
 
   // Submit review
-  void _submitReview() {
+  void _submitReview() async {
     if (_reviewController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a review'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Please enter a review'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
@@ -100,15 +110,71 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     if (kDebugMode) {
       print('Review submitted: ${_reviewController.text}');
     }
+   try {
+    final userDoc = await FirebaseFirestore.instance
+        .collection('Users') // Adjust collection name as needed
+        .doc(guserid)
+        .get();
+
+    if (!userDoc.exists) {
+      showCustomSnackBar(context, message: 'Teacher not found!', type: SnackType.error);
+      return;
+    }
+
+    final userData = userDoc.data() as Map<String, dynamic>;
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Review submitted successfully!'),
-      ),
+    // Check if review already exists
+    final existingReview = await FirebaseFirestore.instance
+        .collection('Projects')
+        .doc(widget.project.id)
+        .collection('Review')
+        .doc(guserid)
+        .get();
+
+    if (existingReview.exists) {
+      showCustomSnackBar(
+        context, 
+        message: 'You have already submitted a review for this project!', 
+        type: SnackType.error
+      );
+      return;
+    }
+
+    // Add review with user details
+    await FirebaseFirestore.instance
+        .collection('Projects')
+        .doc(widget.project.id)
+        .collection('Review')
+        .doc(guserid)
+        .set({
+      'comment': _reviewController.text,
+      'rating': _rating,
+      'outoff': 5,
+      'status': 1,
+      'teacherName': userData['name'] ?? 'Unknown', // Adjust field name
+      'teacherEmail': userData['email'] ?? '',
+      'reviewedAt': FieldValue.serverTimestamp(),
+      'teachId': guserid,
+    });
+
+    showCustomSnackBar(
+      context, 
+      message: 'Review submitted successfully!', 
+      type: SnackType.success
     );
-    
+
     _reviewController.clear();
+    _rating = 0;
     FocusScope.of(context).unfocus();
+    
+  } catch (error) {
+    showCustomSnackBar(
+      context, 
+      message: 'Review Submission Failed!', 
+      type: SnackType.error
+    );
+  }
+    
   }
 
   @override
@@ -117,7 +183,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         elevation: 0,
-        title: const Text('Project Details', style: TextStyle(fontWeight: FontWeight.w600)),
+        title: const Text(
+          'Project Details',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -154,11 +223,23 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _buildInfoRow(Icons.person, 'Student', widget.project.teacherName ?? 'N/A'),
+                  _buildInfoRow(
+                    Icons.person,
+                    'Student',
+                    widget.project.teacherName ?? 'N/A',
+                  ),
                   const SizedBox(height: 8),
-                  _buildInfoRow(Icons.badge, 'Roll No', widget.project.teacherId ?? 'N/A'),
+                  _buildInfoRow(
+                    Icons.badge,
+                    'Roll No',
+                    widget.project.teacherId ?? 'N/A',
+                  ),
                   const SizedBox(height: 8),
-                  _buildInfoRow(Icons.calendar_today, 'Submitted', widget.project.uploadAt ?? 'N/A'),
+                  _buildInfoRow(
+                    Icons.calendar_today,
+                    'Submitted',
+                    widget.project.uploadAt ?? 'N/A',
+                  ),
                 ],
               ),
             ),
@@ -173,7 +254,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     icon: Icons.description,
                     child: Text(
                       widget.project.description ?? 'No description provided.',
-                      style: TextStyle(fontSize: 15, color: Colors.grey[700], height: 1.5),
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey[700],
+                        height: 1.5,
+                      ),
                     ),
                   ),
 
@@ -185,11 +270,23 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     icon: Icons.info_outline,
                     child: Column(
                       children: [
-                        _buildDetailRow('Department', widget.project.department??'', Colors.purple),
+                        _buildDetailRow(
+                          'Department',
+                          widget.project.department ?? '',
+                          Colors.purple,
+                        ),
                         const SizedBox(height: 12),
-                        _buildDetailRow('Batch', widget.project.batch??'', Colors.orange),
+                        _buildDetailRow(
+                          'Batch',
+                          widget.project.batch ?? '',
+                          Colors.orange,
+                        ),
                         const SizedBox(height: 12),
-                        _buildDetailRow('Domain', widget.project.domain??'', Colors.teal),
+                        _buildDetailRow(
+                          'Domain',
+                          widget.project.domain ?? '',
+                          Colors.teal,
+                        ),
                       ],
                     ),
                   ),
@@ -205,7 +302,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         _buildPdfTile(
                           'Abstract PDF',
                           'Project abstract and summary',
-                          widget.project.abstractfileurl??'',
+                          widget.project.abstractfileurl ?? '',
                           Icons.article,
                           Colors.blue,
                         ),
@@ -213,7 +310,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         _buildPdfTile(
                           'Final Project PDF',
                           'Complete project report',
-                          widget.project.finalProjectFileurl??'',
+                          widget.project.finalProjectFileurl ?? '',
                           Icons.description,
                           Colors.green,
                         ),
@@ -224,86 +321,186 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   const SizedBox(height: 16),
 
                   // Review Section
+                   if (widget.project.status == 'approved')
                   _buildCard(
                     title: 'Submit Review',
                     icon: Icons.rate_review,
                     child: Column(
                       children: [
+                        // Star Rating Selection
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Rating',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(5, (index) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _rating = index + 1;
+                                    });
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
+                                    child: Icon(
+                                      index < _rating
+                                          ? Icons.star
+                                          : Icons.star_border,
+                                      color: index < _rating
+                                          ? Colors.amber
+                                          : Colors.grey,
+                                      size: 40,
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                            if (_rating > 0)
+                              Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    '$_rating out of 5 stars',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Comment Field
                         TextField(
                           controller: _reviewController,
                           maxLines: 4,
                           decoration: InputDecoration(
-                            hintText: 'Enter your review and feedback...',
+                            hintText: 'Share your experience and feedback...',
+                            hintStyle: TextStyle(color: Colors.grey[400]),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.indigo, width: 2),
+                              borderSide: const BorderSide(
+                                color: Colors.indigo,
+                                width: 2,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             filled: true,
                             fillColor: Colors.grey[50],
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
+
+                        // Submit Button
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: _submitReview,
-                            icon: const Icon(Icons.send),
-                            label: const Text('Submit Review', style: TextStyle(fontSize: 16)),
+                            icon: const Icon(
+                              Icons.send,
+                              color: AppColors.whiteColor,
+                            ),
+                            label: const Text(
+                              'Submit Review',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AppColors.whiteColor,
+                              ),
+                            ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.indigo,
+                              backgroundColor: AppColors.primaryColor,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
+                              elevation: 2,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-
+ if (widget.project.status == 'pending')
                   const SizedBox(height: 16),
 
                   // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _projectStatus == 'approved' ? null : _approveProject,
-                          icon: const Icon(Icons.check_circle),
-                          label: const Text('Approve', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                  if (widget.project.status == 'pending')
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _projectStatus == 'approved'
+                                ? null
+                                : _approveProject,
+                            icon: const Icon(Icons.check_circle),
+                            label: const Text(
+                              'Approve',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            disabledBackgroundColor: Colors.grey,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              disabledBackgroundColor: Colors.grey,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _projectStatus == 'rejected' ? null : _rejectProject,
-                          icon: const Icon(Icons.cancel),
-                          label: const Text('Reject', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _projectStatus == 'rejected'
+                                ? null
+                                : _rejectProject,
+                            icon: const Icon(Icons.cancel),
+                            label: const Text(
+                              'Reject',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            disabledBackgroundColor: Colors.grey,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              disabledBackgroundColor: Colors.grey,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
 
                   const SizedBox(height: 20),
                 ],
@@ -354,7 +551,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           const SizedBox(width: 4),
           Text(
             text,
-            style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 12),
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -372,13 +573,21 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         ),
         Text(
           value,
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildCard({required String title, required IconData icon, required Widget child}) {
+  Widget _buildCard({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -401,7 +610,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
             ],
           ),
@@ -425,18 +638,32 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         children: [
           Text(
             label,
-            style: TextStyle(fontSize: 15, color: Colors.grey[700], fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+            ),
           ),
           Text(
             value,
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color),
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPdfTile(String title, String subtitle, String url, IconData icon, Color color) {
+  Widget _buildPdfTile(
+    String title,
+    String subtitle,
+    String url,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -463,7 +690,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -494,15 +725,13 @@ class PdfViewerScreen extends StatelessWidget {
   final String pdfUrl;
   final String title;
 
-  const PdfViewerScreen({Key? key, required this.pdfUrl, required this.title}) : super(key: key);
+  const PdfViewerScreen({Key? key, required this.pdfUrl, required this.title})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Colors.indigo,
-      ),
+      appBar: AppBar(title: Text(title), backgroundColor: Colors.indigo),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
