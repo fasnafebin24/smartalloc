@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartalloc/features/authentification/login_screen.dart';
 
-import '../../home/home_scree.dart';
+import '../../../admin/project/teach_projectlist_screen.dart';
+import '../../home/teach_home_scree.dart';
 
 // Main Teacher Dashboard with Bottom Navigation
 class TeacherDashboard extends StatefulWidget {
@@ -27,7 +28,7 @@ gotoproject() {
      TeachHomeScreen(chnageindex: () {
       gotoproject();
      },),
-    const ProjectsScreen(),
+    const TeacchProjectsScreen(),
     const StudentsScreen(),
     const SettingsScreen(),
   ];
@@ -76,165 +77,8 @@ gotoproject() {
 
  
 
-// 2. Projects Screen
-class ProjectsScreen extends StatelessWidget {
-  const ProjectsScreen({super.key});
+ 
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF8C7CD4), Color(0xFFE8E4F3)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'All Projects',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle, color: Colors.white, size: 30),
-                    onPressed: () {
-                      // Add new project
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // Search Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: "Search projects...",
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Projects List
-            Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
-                ),
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: 8,
-                  itemBuilder: (context, index) {
-                    return _projectCard(
-                      'Project ${index + 1}',
-                      'Computer Science',
-                      'Pending',
-                      index % 2 == 0,
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _projectCard(String title, String department, String status, bool isApproved) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.folder, color: Colors.orange, size: 30),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  department,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isApproved ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              status,
-              style: TextStyle(
-                color: isApproved ? Colors.green : Colors.orange,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // 3. Students Screen
 class StudentsScreen extends StatelessWidget {

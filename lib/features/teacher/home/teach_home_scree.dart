@@ -78,11 +78,14 @@ class TeachHomeScreen extends StatelessWidget {
                       StreamBuilder(
                         stream: FirebaseFirestore.instance.collection('Projects').where('teacherId',isEqualTo:  guserid).snapshots(),
                         builder: (context, asyncSnapshot) {
-                          return _dashboardCard(
-                            'Total Projects',
-                            (asyncSnapshot.data?.docs.length ?? 0).toString(),
-                            Icons.folder,
-                            Colors.orange,
+                          return GestureDetector(
+                            onTap:()=>chnageindex!(),
+                            child: _dashboardCard(
+                              'Total Projects',
+                              (asyncSnapshot.data?.docs.length ?? 0).toString(),
+                              Icons.folder,
+                              Colors.orange,
+                            ),
                           );
                         }
                       ),

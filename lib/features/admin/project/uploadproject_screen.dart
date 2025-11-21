@@ -31,7 +31,8 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
   String? selectedTeacherEmail;
   String? _selectedDepartment;
   String? _selectedDepartmentCode;
-  List<Map<String,dynamic>> _departments = []; // List to store departments from Firebase
+  List<Map<String, dynamic>> _departments =
+      []; // List to store departments from Firebase
   bool _isLoadingDepartments = true;
 
   final List<String> domains = [
@@ -53,20 +54,23 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
   void initState() {
     super.initState();
     fetchTeachers();
-     _loadDepartments();
+    _loadDepartments();
   }
-Future<void> _loadDepartments() async {
+
+  Future<void> _loadDepartments() async {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('Department')
           .get();
-      
+
       setState(() {
         _departments = snapshot.docs
-            .map((doc) => {
-              'code':doc.data()['code'] as String,
-              'title':doc.data()['title'] as String,
-              })
+            .map(
+              (doc) => {
+                'code': doc.data()['code'] as String,
+                'title': doc.data()['title'] as String,
+              },
+            )
             .toList();
         _isLoadingDepartments = false;
       });
@@ -83,6 +87,7 @@ Future<void> _loadDepartments() async {
       }
     }
   }
+
   // Fetch teachers from Firebase
   Future<void> fetchTeachers() async {
     try {
@@ -222,7 +227,11 @@ Future<void> _loadDepartments() async {
       // Create project document in Firestore
       Map<String, dynamic> projectData = {
         'id': id,
-        'projectName': projectNameCtrl.text.trim(),
+        'projectName': projectNameCtrl.text,
+        'namefilter': [
+          for (int i = 1; i <= projectNameCtrl.text.trim().length; i++)
+            projectNameCtrl.text.trim().substring(0, i),
+        ],
         'description': descCtrl.text.trim(),
         'domain': selectedDomain,
         'teacherId': selectedTeacherId,
@@ -383,73 +392,71 @@ Future<void> _loadDepartments() async {
                     });
                   },
                 ),
-                  SizedBox(height: 16,),
+                SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                            initialValue: _selectedDepartment,
-                            decoration: InputDecoration(
-                              labelText: "Department",
-                              prefixIcon: const Icon(Icons.business_outlined),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                  initialValue: _selectedDepartment,
+                  decoration: InputDecoration(
+                    labelText: "Department",
+                    prefixIcon: const Icon(Icons.business_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF8C7CD4),
+                        width: 2,
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                  ),
+                  items: _isLoadingDepartments
+                      ? []
+                      : _departments
+                            .map(
+                              (department) => DropdownMenuItem<String>(
+                                value: department['title'],
+                                child: Text(department['title']),
                               ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFE0E0E0),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF8C7CD4),
-                                  width: 2,
-                                ),
-                              ),
-                              filled: true,
-                              fillColor: Colors.grey[50],
+                            )
+                            .toList(),
+                  onChanged: _isLoadingDepartments
+                      ? null
+                      : (value) {
+                          var deprt = _departments.firstWhere(
+                            (t) => t['title'] == value,
+                          );
+                          setState(() {
+                            _selectedDepartment = value;
+                            _selectedDepartmentCode = deprt['code'];
+                          });
+                          fetchTeachers();
+                        },
+                  hint: _isLoadingDepartments
+                      ? const Row(
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
-                            items: _isLoadingDepartments
-                                ? []
-                                : _departments
-                                    .map((department) => DropdownMenuItem<String>(
-                                          value: department['title'],
-                                          child: Text(department['title']),
-                                        ))
-                                    .toList(),
-                            onChanged: _isLoadingDepartments
-                                ? null
-                                : (value) {
-                                   var deprt = _departments.firstWhere(
-                              (t) => t['title'] == value,
-                            );
-                                    setState(() {
-                                      _selectedDepartment = value;
-                                      _selectedDepartmentCode = deprt['code'];
-                                    });
-                                    fetchTeachers();
-                                  },
-                            hint: _isLoadingDepartments
-                                ? const Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                      SizedBox(width: 12),
-                                      Text('Loading departments...'),
-                                    ],
-                                  )
-                                : const Text('Select department'),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return "Please select a department";
-                              }
-                              return null;
-                            },
-                          ),
+                            SizedBox(width: 12),
+                            Text('Loading departments...'),
+                          ],
+                        )
+                      : const Text('Select department'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please select a department";
+                    }
+                    return null;
+                  },
+                ),
                 const SizedBox(height: 16),
 
                 // Teacher Selection Dropdown
@@ -549,7 +556,7 @@ Future<void> _loadDepartments() async {
                     ),
                   ],
                 ),
-              
+
                 const SizedBox(height: 24),
 
                 // PDFs Section Header
