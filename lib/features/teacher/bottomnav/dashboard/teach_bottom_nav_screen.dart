@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartalloc/features/authentification/login_screen.dart';
 
-import '../../../admin/project/teach_projectlist_screen.dart';
+import '../../project/teach_projectlist_screen.dart';
 import '../../home/teach_home_scree.dart';
 
 // Main Teacher Dashboard with Bottom Navigation
