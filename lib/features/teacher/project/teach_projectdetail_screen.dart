@@ -1,13 +1,17 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:smartalloc/features/teacher/project/model/project_model.dart';
 import 'package:smartalloc/utils/contants/colors.dart';
 import 'package:smartalloc/utils/methods/customsnackbar.dart';
 import 'package:smartalloc/utils/variables/globalvariables.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../pdf/pdfview_screen.dart';
 
@@ -41,24 +45,32 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   // Download PDF function
   Future<void> _downloadPdf(String url, String fileName) async {
-    final Uri pdfUri = Uri.parse(url);
-    if (await canLaunchUrl(pdfUri)) {
-      await launchUrl(pdfUri, mode: LaunchMode.externalApplication);
+  try {
+    // Request storage permission
+    var status = await Permission.storage.request();
+    if (!status.isGranted) {
+      // Show permission denied message
+      return;
+    }
+
+    final dir = await getExternalStorageDirectory();
+    final savePath = '${dir!.path}/$fileName.pdf';
+    
+    await Dio().download(url, savePath);
+    
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Downloading $fileName...'),
+          content: Text('Downloaded to $savePath'),
           backgroundColor: Colors.green,
         ),
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not download PDF'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
+  } catch (e) {
+    // Handle error
+    log(e.toString());
   }
+}
 
   // View PDF in app
   void _viewPdf(String url, String title) {
@@ -75,6 +87,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     setState(() {
       _projectStatus = 'approved';
     });
+    FirebaseFirestore.instance.collection('Projects').doc(widget.project.id).update({
+      'status': 'approved',
+    }); 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Project Approved Successfully!'),
@@ -89,6 +104,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     setState(() {
       _projectStatus = 'rejected';
     });
+      FirebaseFirestore.instance.collection('Projects').doc(widget.project.id).update({
+      'status': 'approved',
+    }); 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Project Rejected'),
