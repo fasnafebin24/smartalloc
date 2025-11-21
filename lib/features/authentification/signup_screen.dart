@@ -436,7 +436,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                           // Department Dropdown
                           DropdownButtonFormField<String>(
-                            value: _selectedDepartment,
+                            initialValue: _selectedDepartment,
                             decoration: InputDecoration(
                               labelText: "Department",
                               prefixIcon: const Icon(Icons.business_outlined),

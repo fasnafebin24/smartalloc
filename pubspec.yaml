@@ -44,6 +44,7 @@ dependencies:
   uuid: ^4.5.2
   url_launcher: ^6.3.2
   intl: ^0.20.2
+  syncfusion_flutter_pdfviewer: ^31.2.12
 
 dev_dependencies:
   flutter_test:

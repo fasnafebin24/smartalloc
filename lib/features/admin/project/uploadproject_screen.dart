@@ -461,7 +461,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
 
                 // Teacher Selection Dropdown
                 DropdownButtonFormField<String>(
-                  value: selectedTeacherId,
+                  initialValue: selectedTeacherId,
                   decoration: InputDecoration(
                     labelText: "Select Guide Teacher",
                     prefixIcon: const Icon(Icons.person),

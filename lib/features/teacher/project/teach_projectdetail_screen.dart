@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -8,6 +8,8 @@ import 'package:smartalloc/utils/contants/colors.dart';
 import 'package:smartalloc/utils/methods/customsnackbar.dart';
 import 'package:smartalloc/utils/variables/globalvariables.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../../pdf/pdfview_screen.dart';
 
 // Project Details Screen
 class ProjectDetailsScreen extends StatefulWidget {
@@ -23,6 +25,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   final TextEditingController _reviewController = TextEditingController();
   late String _projectStatus;
   int _rating = 0;
+
+  bool _isSubmittingReview = false;
   @override
   void initState() {
     super.initState();
@@ -94,87 +98,112 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     );
   }
 
-  // Submit review
   void _submitReview() async {
     if (_reviewController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a review'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    // Here you would send the review to your backend
-    if (kDebugMode) {
-      print('Review submitted: ${_reviewController.text}');
-    }
-   try {
-    final userDoc = await FirebaseFirestore.instance
-        .collection('Users') // Adjust collection name as needed
-        .doc(guserid)
-        .get();
-
-    if (!userDoc.exists) {
-      showCustomSnackBar(context, message: 'Teacher not found!', type: SnackType.error);
-      return;
-    }
-
-    final userData = userDoc.data() as Map<String, dynamic>;
-    
-    // Check if review already exists
-    final existingReview = await FirebaseFirestore.instance
-        .collection('Projects')
-        .doc(widget.project.id)
-        .collection('Review')
-        .doc(guserid)
-        .get();
-
-    if (existingReview.exists) {
       showCustomSnackBar(
-        context, 
-        message: 'You have already submitted a review for this project!', 
-        type: SnackType.error
+        context,
+        message: 'Please enter a review',
+        type: SnackType.error,
       );
       return;
     }
 
-    // Add review with user details
-    await FirebaseFirestore.instance
-        .collection('Projects')
-        .doc(widget.project.id)
-        .collection('Review')
-        .doc(guserid)
-        .set({
-      'comment': _reviewController.text,
-      'rating': _rating,
-      'outoff': 5,
-      'status': 1,
-      'teacherName': userData['name'] ?? 'Unknown', // Adjust field name
-      'teacherEmail': userData['email'] ?? '',
-      'reviewedAt': FieldValue.serverTimestamp(),
-      'teachId': guserid,
+    if (_rating == 0) {
+      showCustomSnackBar(
+        context,
+        message: 'Please select a rating',
+        type: SnackType.error,
+      );
+      return;
+    }
+
+    // Show loading state
+    setState(() {
+      _isSubmittingReview = true;
     });
 
-    showCustomSnackBar(
-      context, 
-      message: 'Review submitted successfully!', 
-      type: SnackType.success
-    );
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(guserid)
+          .get();
 
-    _reviewController.clear();
-    _rating = 0;
-    FocusScope.of(context).unfocus();
-    
-  } catch (error) {
-    showCustomSnackBar(
-      context, 
-      message: 'Review Submission Failed!', 
-      type: SnackType.error
-    );
-  }
-    
+      if (!userDoc.exists) {
+        showCustomSnackBar(
+          context,
+          message: 'Teacher not found!',
+          type: SnackType.error,
+        );
+        setState(() {
+          _isSubmittingReview = false;
+        });
+        return;
+      }
+
+      final userData = userDoc.data() as Map<String, dynamic>;
+
+      // Check if review already exists
+      final existingReview = await FirebaseFirestore.instance
+          .collection('Projects')
+          .doc(widget.project.id)
+          .collection('Review')
+          .doc(guserid)
+          .get();
+
+      if (existingReview.exists) {
+        showCustomSnackBar(
+          context,
+          message: 'You have already submitted a review for this project!',
+          type: SnackType.error,
+        );
+        setState(() {
+          _isSubmittingReview = false;
+        });
+        return;
+      }
+
+      // Add review with user details
+      await FirebaseFirestore.instance
+          .collection('Projects')
+          .doc(widget.project.id)
+          .collection('Review')
+          .doc(guserid)
+          .set({
+            'comment': _reviewController.text,
+            'rating': _rating,
+            'outoff': 5,
+            'status': 1,
+            'teacherName': userData['name'] ?? 'Unknown',
+            'teacherEmail': userData['email'] ?? '',
+            'reviewedAt': FieldValue.serverTimestamp(),
+            'teachId': guserid,
+          });
+
+      showCustomSnackBar(
+        context,
+        message: 'Review submitted successfully!',
+        type: SnackType.success,
+      );
+
+      setState(() {
+        _reviewController.clear();
+        _rating = 0;
+        _isSubmittingReview = false;
+      });
+      FocusScope.of(context).unfocus();
+    } catch (error) {
+      if (kDebugMode) {
+        print('Review submission error: $error');
+      }
+      showCustomSnackBar(
+        context,
+        message: 'Review Submission Failed!',
+        type: SnackType.error,
+      );
+      setState(() {
+        _isSubmittingReview = false;
+      });
+    }
   }
 
   @override
@@ -321,132 +350,149 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   const SizedBox(height: 16),
 
                   // Review Section
-                   if (widget.project.status == 'approved')
-                  _buildCard(
-                    title: 'Submit Review',
-                    icon: Icons.rate_review,
-                    child: Column(
-                      children: [
-                        // Star Rating Selection
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Rating',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
+                  if (widget.project.status == 'approved')
+                    _buildCard(
+                      title: 'Submit Review',
+                      icon: Icons.rate_review,
+                      child: Column(
+                        children: [
+                          // Star Rating Selection
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Rating',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(5, (index) {
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _rating = index + 1;
-                                    });
-                                  },
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(5, (index) {
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _rating = index + 1;
+                                      });
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                      ),
+                                      child: Icon(
+                                        index < _rating
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                        color: index < _rating
+                                            ? Colors.amber
+                                            : Colors.grey,
+                                        size: 40,
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                              if (_rating > 0)
+                                Center(
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                    ),
-                                    child: Icon(
-                                      index < _rating
-                                          ? Icons.star
-                                          : Icons.star_border,
-                                      color: index < _rating
-                                          ? Colors.amber
-                                          : Colors.grey,
-                                      size: 40,
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                            if (_rating > 0)
-                              Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Text(
-                                    '$_rating out of 5 stars',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[600],
-                                      fontWeight: FontWeight.w500,
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      '$_rating out of 5 stars',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Comment Field
-                        TextField(
-                          controller: _reviewController,
-                          maxLines: 4,
-                          decoration: InputDecoration(
-                            hintText: 'Share your experience and feedback...',
-                            hintStyle: TextStyle(color: Colors.grey[400]),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade300,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Colors.indigo,
-                                width: 2,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade300,
-                              ),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey[50],
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 16),
+                          const SizedBox(height: 20),
 
-                        // Submit Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _submitReview,
-                            icon: const Icon(
-                              Icons.send,
-                              color: AppColors.whiteColor,
-                            ),
-                            label: const Text(
-                              'Submit Review',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: AppColors.whiteColor,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryColor,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
+                          // Comment Field
+                          TextField(
+                            controller: _reviewController,
+                            maxLines: 4,
+                            decoration: InputDecoration(
+                              hintText: 'Share your experience and feedback...',
+                              hintStyle: TextStyle(color: Colors.grey[400]),
+                              border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
                               ),
-                              elevation: 2,
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Colors.indigo,
+                                  width: 2,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+
+                          // Submit Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _isSubmittingReview
+                                  ? null
+                                  : _submitReview,
+                              icon: _isSubmittingReview
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.send,
+                                      color: AppColors.whiteColor,
+                                    ),
+                              label: Text(
+                                _isSubmittingReview
+                                    ? 'Submitting...'
+                                    : 'Submit Review',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: AppColors.whiteColor,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _isSubmittingReview
+                                    ? AppColors.primaryColor.withOpacity(0.6)
+                                    : AppColors.primaryColor,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
- if (widget.project.status == 'pending')
-                  const SizedBox(height: 16),
+                  if (widget.project.status == 'pending')
+                    const SizedBox(height: 16),
 
                   // Action Buttons
                   if (widget.project.status == 'pending')
@@ -720,46 +766,4 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   }
 }
 
-// PDF Viewer Screen (Simple placeholder)
-class PdfViewerScreen extends StatelessWidget {
-  final String pdfUrl;
-  final String title;
 
-  const PdfViewerScreen({Key? key, required this.pdfUrl, required this.title})
-    : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title), backgroundColor: Colors.indigo),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.picture_as_pdf, size: 100, color: Colors.indigo),
-            const SizedBox(height: 20),
-            Text(
-              'PDF Viewer',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'URL: $pdfUrl',
-              style: TextStyle(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            const Padding(
-              padding: EdgeInsets.all(20.0),
-              child: Text(
-                'To view PDFs in your app, integrate packages like:\n• flutter_pdfview\n• syncfusion_flutter_pdfviewer\n• pdf_viewer_plugin',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

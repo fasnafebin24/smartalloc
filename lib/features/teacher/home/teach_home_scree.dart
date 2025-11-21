@@ -1,4 +1,6 @@
 // 1. Dashboard Screen
+// ignore_for_file: deprecated_member_use
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:smartalloc/utils/variables/globalvariables.dart';
