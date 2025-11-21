@@ -3,11 +3,13 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:smartalloc/utils/contants/colors.dart';
 import 'package:smartalloc/utils/variables/globalvariables.dart';
 
 class TeachHomeScreen extends StatelessWidget {
-   TeachHomeScreen({super.key,this.chnageindex});
+   TeachHomeScreen({super.key,this.chnageindex,this.student});
   VoidCallback? chnageindex;
+  VoidCallback? student;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -15,7 +17,7 @@ class TeachHomeScreen extends StatelessWidget {
       width: double.infinity,    
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF8C7CD4), Color(0xFFE8E4F3)],
+          colors: [AppColors.primaryColor, Color(0xFFE8E4F3)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -104,11 +106,19 @@ class TeachHomeScreen extends StatelessWidget {
                         }
                       ),
                       SizedBox(height: 16,),
-                      _dashboardCard(
-                        'Students',
-                        '156',
-                        Icons.people,
-                        Colors.blue,
+                       StreamBuilder(
+                        stream: FirebaseFirestore.instance.collection('Users').where('departmentcode',isEqualTo:  gdepartment).where('role',isEqualTo: 'student').snapshots(),
+                        builder: (context, asyncSnapshot) {
+                          return GestureDetector(
+                            onTap: () => student!(),
+                            child: _dashboardCard(
+                              'Students',
+                              (asyncSnapshot.data?.docs.length ?? 0).toString(),
+                              Icons.people,
+                              Colors.blue,
+                            ),
+                          );
+                        }
                       ),
                      
                     ],
@@ -147,28 +157,31 @@ class TeachHomeScreen extends StatelessWidget {
               child: Icon(icon, color: color, size: 32),
             ),
             const SizedBox(width: 12),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                
-                const SizedBox(height: 12),
-                Text(
-                  count,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  
+                  const SizedBox(height: 12),
+                  Text(
+                    count,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
