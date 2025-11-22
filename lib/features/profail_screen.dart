@@ -2,10 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import '../utils/helper/helper_cloudinary.dart';
 import '../utils/variables/globalvariables.dart';
 import 'authentification/model/user_model.dart';
+// Import your Cloudinary upload function
+// import '../services/cloudinary_service.dart'; // Adjust path as needed
 
 class ProfileEditScreen extends StatefulWidget {
   const ProfileEditScreen({super.key});
@@ -18,11 +21,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isUploadingImage = false;
   String? _role;
   String? _department;
+  String? _avatarUrl;
+  XFile? _selectedImage;
 
   @override
   void initState() {
@@ -32,17 +39,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   Future<void> _loadUserData() async {
     try {
-      
-      
-
-          setState(() {
-            _nameController.text = userdetails?.name??"";
-            _emailController.text = userdetails?.email??'';
-            _role = userdetails?.role??'';
-            _department = userdetails?.department;
-            _isLoading = false;
-          });
-
+      setState(() {
+        _nameController.text = userdetails?.name ?? "";
+        _emailController.text = userdetails?.email ?? '';
+        _role = userdetails?.role ?? '';
+        _department = userdetails?.department;
+        _avatarUrl = userdetails?.avatarUrl; 
+        _isLoading = false;
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -54,11 +58,50 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     }
   }
 
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = XFile(image.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error picking image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  
+
   Future<void> _saveProfile() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isSaving = true);
 
       try {
+        String? newAvatarUrl = _avatarUrl;
+
+        // Upload new image if selected
+        if (_selectedImage != null) {
+          setState(() => _isUploadingImage = true);
+          newAvatarUrl = await CloudneryUploader().uploadFile(_selectedImage!);
+          setState(() => _isUploadingImage = false);
+
+          if (newAvatarUrl == null) {
+            throw Exception('Failed to upload image');
+          }
+        }
+
         // Generate namefilter array
         List<String> nameFilter = [];
         for (int i = 1; i <= _nameController.text.length; i++) {
@@ -69,19 +112,23 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             .collection('Users')
             .doc(userdetails?.uid)
             .update({
-              'name': _nameController.text,
-              'namefilter': nameFilter,
-            });
+          'name': _nameController.text,
+          'namefilter': nameFilter,
+          'avatarUrl': newAvatarUrl ?? '',
+        });
+
         DocumentSnapshot doc = await FirebaseFirestore.instance
             .collection("Users")
             .doc(userdetails?.uid)
             .get();
+        
         if (doc.exists) {
           var data = doc.data() as Map<String, dynamic>;
           if (data['status'] == 1) {
             userdetails = UserModel.fromJson(data);
           }
         }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -89,7 +136,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.pop(context,userdetails);
+          Navigator.pop(context, userdetails);
         }
       } catch (e) {
         if (mounted) {
@@ -102,9 +149,48 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         }
       } finally {
         if (mounted) {
-          setState(() => _isSaving = false);
+          setState(() {
+            _isSaving = false;
+            _isUploadingImage = false;
+          });
         }
       }
+    }
+  }
+
+  Widget _buildAvatar() {
+    if (_selectedImage != null) {
+      // Show selected image from gallery
+      return CircleAvatar(
+        radius: 60,
+        backgroundImage: FileImage(_selectedImage! as File),
+      );
+    } else if (_avatarUrl != null && _avatarUrl!.isNotEmpty) {
+      // Show existing avatar from URL
+      return CircleAvatar(
+        radius: 60,
+        backgroundImage: NetworkImage(_avatarUrl!),
+        backgroundColor: Colors.white,
+        child: _isUploadingImage
+            ? const CircularProgressIndicator(color: Colors.white)
+            : null,
+      );
+    } else {
+      // Show default avatar with initial
+      return CircleAvatar(
+        radius: 60,
+        backgroundColor: Colors.white,
+        child: Text(
+          _nameController.text.isNotEmpty
+              ? _nameController.text[0].toUpperCase()
+              : '?',
+          style: const TextStyle(
+            fontSize: 40,
+            fontWeight: FontWeight.bold,
+            color: Color.fromARGB(255, 170, 169, 243),
+          ),
+        ),
+      );
     }
   }
 
@@ -175,39 +261,29 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   Stack(
                     alignment: Alignment.bottomRight,
                     children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.white,
-                        child: Text(
-                          _nameController.text.isNotEmpty
-                              ? _nameController.text[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.bold,
-                            color: Color.fromARGB(255, 170, 169, 243),
-                          ),
-                        ),
-                      ),
+                      _buildAvatar(),
                       GestureDetector(
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Change profile picture'),
-                            ),
-                          );
-                        },
+                        onTap: _isSaving ? null : _pickImage,
                         child: Container(
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.amber,
                           ),
                           padding: const EdgeInsets.all(8),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            size: 20,
-                            color: Colors.white,
-                          ),
+                          child: _isUploadingImage
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.camera_alt,
+                                  size: 20,
+                                  color: Colors.white,
+                                ),
                         ),
                       ),
                     ],
