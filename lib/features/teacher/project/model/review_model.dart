@@ -4,6 +4,10 @@
 
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../../../utils/methods/date_methods.dart';
+
 List<ReviewModel> reviewModelFromJson(String str) => List<ReviewModel>.from(json.decode(str).map((x) => ReviewModel.fromJson(x)));
 
 String reviewModelToJson(List<ReviewModel> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
@@ -16,7 +20,7 @@ class ReviewModel {
     String? name;
     String? emailId;
     String? avatarUrl;
-    DateTime? reviewedAt;
+    String? reviewedAt;
     String? userId;
 
     ReviewModel({
@@ -39,7 +43,7 @@ class ReviewModel {
         name: json["name"],
         emailId: json["emailId"],
         avatarUrl: json["avatarUrl"],
-        reviewedAt: json["reviewedAt"] == null ? null : DateTime.parse(json["reviewedAt"]),
+        reviewedAt: formatTimeAgo(json["uploadAt"] !=null ?json['uploadAt']:Timestamp.now()),
         userId: json["userId"],
     );
 
@@ -51,7 +55,7 @@ class ReviewModel {
         "name": name,
         "emailId": emailId,
         "avatarUrl": avatarUrl,
-        "reviewedAt": reviewedAt?.toIso8601String(),
+        "reviewedAt": reviewedAt,
         "userId": userId,
     };
 }

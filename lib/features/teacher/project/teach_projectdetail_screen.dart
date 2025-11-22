@@ -352,7 +352,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   ),
 
                   const SizedBox(height: 16),
-                 ReviewListingScreen(),
+                 ReviewListingScreen(projectid:  widget.project.id!),
                   if (widget.project.status == 'approved')
                   const SizedBox(height: 16),
 

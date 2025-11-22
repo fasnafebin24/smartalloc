@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartalloc/features/profail_screen.dart';
@@ -35,7 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Row(
                 children: [
                   Text(
-                    'Settings',
+                    '',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -56,11 +57,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               child: Row(
                 children: [
-                  const CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Color(0xFF8C7CD4),
-                    child: Icon(Icons.person, color: Colors.white, size: 35),
-                  ),
+                  CircleAvatar(
+  radius: 35,
+  backgroundColor: const Color(0xFF8C7CD4),
+  child: ClipOval(
+    child: CachedNetworkImage(
+      imageUrl: userdetails?.avatarUrl??'',
+      fit: BoxFit.cover,
+      width: 70,
+      height: 70,
+      placeholder: (context, url) => const Icon(Icons.person, size: 35, color: Colors.white),
+      errorWidget: (context, url, error) => const Icon(Icons.person, size: 35, color: Colors.white),
+    ),
+  ),
+),
                   const SizedBox(width: 16),
                    Expanded(
                     child: Column(
