@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:smartalloc/features/settings/report_screen.dart';
+import 'package:smartalloc/utils/contants/colors.dart';
 import 'dart:io';
 import '../utils/helper/helper_cloudinary.dart';
 import '../utils/variables/globalvariables.dart';
@@ -209,7 +211,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Profile'),backgroundColor:  Color.fromARGB(255, 170, 169, 243),),
+      appBar: AppBar(title: Text('Profile'),backgroundColor:  Color.fromARGB(255, 170, 169, 243),actions: [
+        TextButton(onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => ReportSubmissionScreen(),));
+        }, child: Text('Report App',style: TextStyle(color: AppColors.whiteColor,fontWeight: FontWeight.w500),))
+      ],),
       backgroundColor: const Color.fromARGB(255, 170, 169, 243),
       body: _isLoading
           ? const Center(
