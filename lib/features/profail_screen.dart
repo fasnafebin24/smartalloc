@@ -328,7 +328,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  retuupdaern 'Please enter your name';
+                                  return 'Please enter your name';
                                 }
                                 return null;
                               },
