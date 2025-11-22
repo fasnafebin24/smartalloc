@@ -6,6 +6,7 @@ import 'package:smartalloc/features/admin/manage/managestudent_screen.dart';
 import 'package:smartalloc/features/admin/manage/manageteacher_screen.dart';
 import 'package:smartalloc/features/authentification/login_screen.dart';
 import 'package:smartalloc/features/settings/adminreport_screen.dart';
+import 'package:smartalloc/features/settings/domain_screen.dart';
 
 import '../project/uploadproject_screen.dart';
 import '../project/viewproject_screen.dart';
@@ -169,6 +170,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => const ViewProjectsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      adminActionCard(
+                        "Domain",
+                        Icons.note_alt_sharp,
+                        const Color(0xFF673AB7),
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DomainsListPage(),
                             ),
                           );
                         },

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:smartalloc/utils/contants/colors.dart';
 import 'package:smartalloc/utils/helper/helper_cloudinary.dart';
 import 'package:smartalloc/utils/methods/customsnackbar.dart';
 
@@ -25,39 +26,63 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
   String? abstractFilePath;
   String? finalProjectFileName;
   String? finalProjectFilePath;
-  String? selectedDomain;
+  
+  // Changed to List for multiple selection
+  List<String> selectedDomains = [];
+  
   String? selectedTeacherId;
   String? selectedTeacherName;
   String? selectedTeacherEmail;
   String? _selectedDepartment;
   String? _selectedDepartmentCode;
-  List<Map<String, dynamic>> _departments =
-      []; // List to store departments from Firebase
+  List<Map<String, dynamic>> _departments = [];
   bool _isLoadingDepartments = true;
 
-  final List<String> domains = [
-    'Flutter',
-    'Dart',
-    'React',
-    'React Native',
-    'Node.js',
-    'Python',
-    'Java',
-    'Other',
-  ];
+  // Changed to fetch from Firestore
+  List<String> domains = [];
+  bool _isLoadingDomains = true;
 
   List<Map<String, dynamic>> teachers = [];
   bool isLoadingTeachers = true;
   bool isSubmitting = false;
-XFile? _selectedImage;
+  XFile? _selectedImage;
+
   @override
   void initState() {
     super.initState();
     fetchTeachers();
     _loadDepartments();
+    _loadDomains(); // Load domains from Firestore
   }
 
-   Future<void> _pickImage() async {
+  // Fetch domains from Firestore
+  Future<void> _loadDomains() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Domains')
+          .get();
+
+      setState(() {
+        domains = snapshot.docs
+            .map((doc) => doc.data()['value'] as String)
+            .toList();
+        _isLoadingDomains = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingDomains = false;
+      });
+      if (mounted) {
+        showCustomSnackBar(
+          context,
+          message: 'Failed to load domains',
+          type: SnackType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _pickImage() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
@@ -80,8 +105,6 @@ XFile? _selectedImage;
       );
     }
   }
-
-  
 
   Future<void> _loadDepartments() async {
     try {
@@ -114,7 +137,6 @@ XFile? _selectedImage;
     }
   }
 
-  // Fetch teachers from Firebase
   Future<void> fetchTeachers() async {
     try {
       QuerySnapshot snapshot = await _firestore
@@ -156,10 +178,11 @@ XFile? _selectedImage;
   void dispose() {
     projectNameCtrl.dispose();
     descCtrl.dispose();
+    startYearCtrl.dispose();
+    endYearCtrl.dispose();
     super.dispose();
   }
 
-  // Pick PDF file
   Future<void> pickFile(bool isAbstract) async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -187,7 +210,6 @@ XFile? _selectedImage;
     }
   }
 
-  // Validate form
   bool validateForm() {
     if (projectNameCtrl.text.trim().isEmpty) {
       _showSnackBar("Please enter project name", Colors.red);
@@ -207,8 +229,9 @@ XFile? _selectedImage;
       return false;
     }
 
-    if (selectedDomain == null) {
-      _showSnackBar("Please select a domain", Colors.red);
+    // Updated validation for multiple domains
+    if (selectedDomains.isEmpty) {
+      _showSnackBar("Please select at least one domain", Colors.red);
       return false;
     }
 
@@ -231,14 +254,13 @@ XFile? _selectedImage;
       return false;
     }
     if (_selectedImage == null) {
-      _showSnackBar("Please Project Thumbanil", Colors.red);
+      _showSnackBar("Please select Project Thumbnail", Colors.red);
       return false;
     }
 
     return true;
   }
 
-  // Submit project to Firebase
   Future<void> submitProject() async {
     if (!validateForm()) return;
     var uuid = Uuid();
@@ -257,7 +279,9 @@ XFile? _selectedImage;
       _selectedImage!,
     );
     try {
-      // Create project document in Firestore
+      // Join selected domains with comma
+      String domainsString = selectedDomains.join(', ');
+      
       Map<String, dynamic> projectData = {
         'id': id,
         'projectName': projectNameCtrl.text,
@@ -266,7 +290,7 @@ XFile? _selectedImage;
             projectNameCtrl.text.trim().substring(0, i),
         ],
         'description': descCtrl.text.trim(),
-        'domain': selectedDomain,
+        'domain': domainsString, // Store as joined string
         'teacherId': selectedTeacherId,
         'teacherName': selectedTeacherName,
         'teacherEmail': selectedTeacherEmail,
@@ -282,7 +306,6 @@ XFile? _selectedImage;
         'status': 'pending',
       };
 
-      // Add to Firestore
       _firestore
           .collection('Projects')
           .doc(id)
@@ -291,11 +314,10 @@ XFile? _selectedImage;
             _showSnackBar(
               "Project uploaded successfully! ",
               Colors.green,
-            ); // Wait a moment to show success message
+            );
 
-            // Navigate back
             if (mounted) {
-              Navigator.pop(context, true); // Return true to indicate success
+              Navigator.pop(context, true);
             }
           })
           .onError((error, stackTrace) {
@@ -316,7 +338,6 @@ XFile? _selectedImage;
     }
   }
 
-  // Show snackbar helper
   void _showSnackBar(String message, Color backgroundColor) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -328,6 +349,74 @@ XFile? _selectedImage;
         ),
       );
     }
+  }
+
+  // Show multi-select dialog with domains from Firestore
+  Future<void> _showDomainSelectionDialog() async {
+    if (_isLoadingDomains) {
+      _showSnackBar("Domains are still loading, please wait...", Colors.orange);
+      return;
+    }
+
+    if (domains.isEmpty) {
+      _showSnackBar("No domains available. Please add domains first.", Colors.orange);
+      return;
+    }
+
+    List<String> tempSelected = List.from(selectedDomains);
+    
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Select Domains'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: domains.map((domain) {
+                    return CheckboxListTile(
+                      title: Text(domain),
+                      value: tempSelected.contains(domain),
+                      onChanged: (bool? checked) {
+                        setDialogState(() {
+                          if (checked == true) {
+                            tempSelected.add(domain);
+                          } else {
+                            tempSelected.remove(domain);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      selectedDomains = tempSelected;
+                    });
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                  ),
+                  child: const Text('Done',style: TextStyle(color: AppColors.whiteColor),),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -346,7 +435,6 @@ XFile? _selectedImage;
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Info
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -368,7 +456,6 @@ XFile? _selectedImage;
                 ),
                 const SizedBox(height: 24),
 
-                // Project Name
                 TextField(
                   controller: projectNameCtrl,
                   decoration: InputDecoration(
@@ -384,7 +471,6 @@ XFile? _selectedImage;
                 ),
                 const SizedBox(height: 16),
 
-                // Description
                 TextField(
                   controller: descCtrl,
                   maxLines: 4,
@@ -402,49 +488,71 @@ XFile? _selectedImage;
                 ),
                 const SizedBox(height: 16),
 
-                // Domain Dropdown
-                DropdownButtonFormField<String>(
-                  value: selectedDomain,
-                  decoration: InputDecoration(
-                    labelText: "Select Domain",
-                    prefixIcon: const Icon(Icons.code),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                // Multi-select Domain Field - Now loading from Firestore
+                InkWell(
+                  onTap: _isLoadingDomains ? null : _showDomainSelectionDialog,
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: "Select Domains",
+                      prefixIcon: _isLoadingDomains
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: Padding(
+                                padding: EdgeInsets.all(12),
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            )
+                          : const Icon(Icons.code),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
-                    filled: true,
-                    fillColor: Colors.grey[50],
+                    child: _isLoadingDomains
+                        ? const Text(
+                            'Loading domains...',
+                            style: TextStyle(color: Colors.grey),
+                          )
+                        : selectedDomains.isEmpty
+                            ? Text(
+                                domains.isEmpty
+                                    ? 'No domains available'
+                                    : 'Tap to select domains',
+                                style: const TextStyle(color: Colors.grey),
+                              )
+                            : Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                children: selectedDomains.map((domain) {
+                                  return Chip(
+                                    label: Text(domain),
+                                    deleteIcon: const Icon(Icons.close, size: 18),
+                                    onDeleted: () {
+                                      setState(() {
+                                        selectedDomains.remove(domain);
+                                      });
+                                    },
+                                    backgroundColor: const Color(0xFF6200EA).withOpacity(0.1),
+                                    labelStyle: const TextStyle(
+                                      color: Color(0xFF6200EA),
+                                      fontSize: 13,
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
                   ),
-                  items: domains.map((String domain) {
-                    return DropdownMenuItem<String>(
-                      value: domain,
-                      child: Text(domain),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      selectedDomain = newValue;
-                    });
-                  },
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
+
                 DropdownButtonFormField<String>(
-                  initialValue: _selectedDepartment,
+                  value: _selectedDepartment,
                   decoration: InputDecoration(
                     labelText: "Department",
                     prefixIcon: const Icon(Icons.business_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF8C7CD4),
-                        width: 2,
-                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -484,18 +592,11 @@ XFile? _selectedImage;
                           ],
                         )
                       : const Text('Select department'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Please select a department";
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 16),
 
-                // Teacher Selection Dropdown
                 DropdownButtonFormField<String>(
-                  initialValue: selectedTeacherId,
+                  value: selectedTeacherId,
                   decoration: InputDecoration(
                     labelText: "Select Guide Teacher",
                     prefixIcon: const Icon(Icons.person),
@@ -555,6 +656,7 @@ XFile? _selectedImage;
                         ),
                 ),
                 const SizedBox(height: 16),
+
                 Row(
                   children: [
                     Expanded(
@@ -564,7 +666,6 @@ XFile? _selectedImage;
                         decoration: InputDecoration(
                           labelText: "Start Year",
                           hintText: "ex : 2019",
-
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -573,12 +674,13 @@ XFile? _selectedImage;
                         ),
                       ),
                     ),
-                    SizedBox(width: 16),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: TextField(
                         controller: endYearCtrl,
+                        keyboardType: TextInputType.number,
                         decoration: InputDecoration(
-                          labelText: "Passout Ya=ear",
+                          labelText: "Passout Year",
                           hintText: "ex : 2022",
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -593,7 +695,48 @@ XFile? _selectedImage;
 
                 const SizedBox(height: 24),
 
-                // PDFs Section Header
+                // Thumbnail Image Upload
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    leading: const Icon(
+                      Icons.image,
+                      color: Colors.blue,
+                      size: 32,
+                    ),
+                    title: const Text(
+                      "Project Thumbnail",
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    subtitle: Text(
+                      _selectedImage != null ? "Image selected" : "No image selected",
+                      style: TextStyle(
+                        color: _selectedImage != null
+                            ? Colors.green
+                            : Colors.grey,
+                        fontSize: 13,
+                      ),
+                    ),
+                    trailing: ElevatedButton.icon(
+                      icon: const Icon(Icons.photo_library, size: 18),
+                      label: const Text("Upload"),
+                      onPressed: _pickImage,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2196F3),
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
                 const Text(
                   "Upload Required Documents",
                   style: TextStyle(
@@ -604,7 +747,6 @@ XFile? _selectedImage;
                 ),
                 const SizedBox(height: 12),
 
-                // Abstract PDF Upload
                 Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(
@@ -640,17 +782,12 @@ XFile? _selectedImage;
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF9800),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                // Final Project PDF Upload
                 Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(
@@ -686,17 +823,12 @@ XFile? _selectedImage;
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF9800),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 32),
 
-                // Submit Button
                 SizedBox(
                   width: double.infinity,
                   height: 55,
