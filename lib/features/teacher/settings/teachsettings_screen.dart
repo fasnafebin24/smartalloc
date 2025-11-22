@@ -4,10 +4,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartalloc/features/profail_screen.dart';
+import 'package:smartalloc/features/settings/heplandsupport.dart';
 
 import '../../../utils/extension/upperfstring_ext.dart';
 import '../../../utils/variables/globalvariables.dart';
 import '../../authentification/login_screen.dart';
+import '../../settings/privacypolicy_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -128,9 +130,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.all(20),
                   children: [
                     _settingTile(Icons.notifications, 'Notifications', () {}),
-                    _settingTile(Icons.security, 'Privacy & Security', () {}),
-                    _settingTile(Icons.help, 'Help & Support', () {}),
-                    _settingTile(Icons.info, 'About', () {}),
+                    _settingTile(Icons.security, 'Privacy & Policy', () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen(),)); 
+                    }),
+                    _settingTile(Icons.help, 'Help & Support', () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen(),)); 
+                    }),
                     const SizedBox(height: 20),
                     _settingTile(Icons.logout, 'Logout', ()async {
                        SharedPreferences prefs = await  SharedPreferences.getInstance();
