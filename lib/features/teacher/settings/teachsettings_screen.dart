@@ -2,14 +2,20 @@
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smartalloc/features/profail_screen.dart';
 
 import '../../../utils/extension/upperfstring_ext.dart';
 import '../../../utils/variables/globalvariables.dart';
 import '../../authentification/login_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -80,7 +86,17 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.edit),
-                    onPressed: () {},
+                    onPressed: ()async {
+                     var usetdata =await Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileEditScreen(),));
+                     if (usetdata!=null) {
+                      userdetails = usetdata;
+                      setState(() {
+                        
+                      });
+                      
+                       
+                     }
+                    },
                   ),
                 ],
               ),

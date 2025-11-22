@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:smartalloc/features/teacher/project/model/project_model.dart';
+import 'package:smartalloc/features/teacher/project/widgets/review_card.dart';
 import 'package:smartalloc/utils/contants/colors.dart';
 import 'package:smartalloc/utils/methods/customsnackbar.dart';
 import 'package:smartalloc/utils/variables/globalvariables.dart';
@@ -141,24 +142,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     });
 
     try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(guserid)
-          .get();
+      
 
-      if (!userDoc.exists) {
-        showCustomSnackBar(
-          context,
-          message: 'Teacher not found!',
-          type: SnackType.error,
-        );
-        setState(() {
-          _isSubmittingReview = false;
-        });
-        return;
-      }
-
-      final userData = userDoc.data() as Map<String, dynamic>;
 
       // Check if review already exists
       final existingReview = await FirebaseFirestore.instance
@@ -191,10 +176,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             'rating': _rating,
             'outoff': 5,
             'status': 1,
-            'teacherName': userData['name'] ?? 'Unknown',
-            'teacherEmail': userData['email'] ?? '',
+            'name': userdetails?.name?? 'Unknown',
+            'emailId': userdetails?.email ?? '',
+            'avatarUrl': userdetails?.avatarUrl ?? '',
             'reviewedAt': FieldValue.serverTimestamp(),
-            'teachId': guserid,
+            'userId': guserid,
           });
 
       showCustomSnackBar(
@@ -365,6 +351,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     ),
                   ),
 
+                  const SizedBox(height: 16),
+                 ReviewListingScreen(),
+                  if (widget.project.status == 'approved')
                   const SizedBox(height: 16),
 
                   // Review Section

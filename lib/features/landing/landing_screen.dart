@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smartalloc/features/home/home%20_screen.dart';
-import 'package:smartalloc/features/profail_screen.dart';
+
+import '../profail_screen.dart';
 
 class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
@@ -13,7 +14,7 @@ class _LandingScreenState extends State<LandingScreen> {
    int _selectedIndex = 0;
    List pages=[
     HomeScreen(),
-    ProfailScreen()
+    ProfileEditScreen()
    ];
   @override
   Widget build(BuildContext context) {

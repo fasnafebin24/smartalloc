@@ -1,5 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -189,6 +191,7 @@ class _TeacchProjectsScreenState extends State<TeacchProjectsScreen> {
                     List<Map<String, dynamic>> projectList = projects
                         .map((doc) => doc.data() as Map<String, dynamic>)
                         .toList();
+                        log(projectList.toString());
                     List<ProjectModel> projectModels = projects
                         .map(
                           (doc) => ProjectModel.fromJson(
@@ -196,7 +199,7 @@ class _TeacchProjectsScreenState extends State<TeacchProjectsScreen> {
                           ),
                         )
                         .toList();
-                    // Avoid logging full raw data (may contain non-JSON types or sensitive info)
+                    
 
                     if (projectModels.isEmpty) {
                       return Center(

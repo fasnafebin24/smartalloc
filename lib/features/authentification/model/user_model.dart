@@ -17,6 +17,7 @@ class UserModel {
     String? role;
     String? department;
     String? departmentcode;
+    String? avatarUrl;
     int? status;
 
     UserModel({
@@ -28,6 +29,7 @@ class UserModel {
         this.role,
         this.department,
         this.departmentcode,
+        this.avatarUrl,
         this.status,
     });
 
@@ -40,6 +42,7 @@ class UserModel {
         role: json["role"],
         department: json["department"],
         departmentcode: json["departmentcode"],
+        avatarUrl: json["avatarUrl"],
         status: json["status"],
     );
 
@@ -52,6 +55,7 @@ class UserModel {
         "role": role,
         "department": department,
         "departmentcode": departmentcode,
+        "avatarUrl": avatarUrl,
         "status": status,
     };
 }
