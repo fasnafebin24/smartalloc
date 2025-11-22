@@ -29,6 +29,7 @@ class _SignupScreenState extends State<SignupScreen> {
   List<Map<String, String>> _departments =
       []; // List to store departments from Firebase
   bool _isLoadingDepartments = true;
+  bool _isSigningUp = false; // Loading state for signup button
 
   @override
   void initState() {
@@ -78,6 +79,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _handleSignup() async {
     if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isSigningUp = true;
+      });
+
       try {
         // First, check if user already exists in Firestore
         final userQuery = await FirebaseFirestore.instance
@@ -99,6 +104,9 @@ class _SignupScreenState extends State<SignupScreen> {
                 type: SnackType.error,
               );
             }
+            setState(() {
+              _isSigningUp = false;
+            });
             return;
           } else if (status == 0) {
             // User account is blocked
@@ -109,6 +117,9 @@ class _SignupScreenState extends State<SignupScreen> {
                 type: SnackType.error,
               );
             }
+            setState(() {
+              _isSigningUp = false;
+            });
             return;
           } else if (status == -1) {
             // User was deleted, delete old data and allow recreation
@@ -199,6 +210,12 @@ class _SignupScreenState extends State<SignupScreen> {
             message: 'An error occurred: ${e.toString()}',
             type: SnackType.error,
           );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isSigningUp = false;
+          });
         }
       }
     }
@@ -494,7 +511,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                         ),
                                       ),
                                       SizedBox(width: 12),
-                                      Text('Loading departments...'),
+                                      Text('Loading ...'),
                                     ],
                                   )
                                 : const Text('Select department'),
@@ -608,12 +625,12 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Signup Button
+                          // Signup Button with Loader
                           SizedBox(
                             width: double.infinity,
                             height: 50,
                             child: ElevatedButton(
-                              onPressed: _handleSignup,
+                              onPressed: _isSigningUp ? null : _handleSignup,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF8C7CD4),
                                 foregroundColor: Colors.white,
@@ -621,15 +638,25 @@ class _SignupScreenState extends State<SignupScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 elevation: 2,
+                                disabledBackgroundColor: const Color(0xFF8C7CD4).withOpacity(0.6),
                               ),
-                              child: const Text(
-                                "SIGN UP",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
+                              child: _isSigningUp
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : const Text(
+                                      "SIGN UP",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
                             ),
                           ),
 
