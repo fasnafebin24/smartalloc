@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartalloc/features/admin/manage/managestudent_screen.dart';
 import 'package:smartalloc/features/admin/manage/manageteacher_screen.dart';
 import 'package:smartalloc/features/authentification/login_screen.dart';
+import 'package:smartalloc/features/settings/adminreport_screen.dart';
 
 import '../project/uploadproject_screen.dart';
 import '../project/viewproject_screen.dart';
@@ -80,11 +81,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.notifications_outlined,
-                          color: Colors.white, size: 28),
-                      onPressed: () {},
-                    ),
+                    // IconButton(
+                    //   icon: const Icon(Icons.notifications_outlined,
+                    //       color: Colors.white, size: 28),
+                    //   onPressed: () {},
+                    // ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -147,14 +148,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         },
                       ),
                       adminActionCard(
-                        "Review",
+                        "Report",
                         Icons.rate_review_outlined,
                         const Color(0xFF00BCD4),
                         () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const ReviewPage(),
+                              builder: (context) => const AdminReprtScreen(),
                             ),
                           );
                         },
@@ -247,71 +248,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// Review Page
-class ReviewPage extends StatelessWidget {
-  const ReviewPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Review"),
-        backgroundColor: const Color(0xFF00BCD4),
-        foregroundColor: Colors.white,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.assignment, color: Color(0xFF00BCD4)),
-                title: const Text("Review Pending Projects"),
-                trailing: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Opening pending projects...")),
-                    );
-                  },
-                  child: const Text("Review"),
-                ),
-              ),
-            ),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.feedback, color: Color(0xFF00BCD4)),
-                title: const Text("Review Student Submissions"),
-                trailing: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Opening submissions...")),
-                    );
-                  },
-                  child: const Text("Review"),
-                ),
-              ),
-            ),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.comment, color: Color(0xFF00BCD4)),
-                title: const Text("Review Feedback & Comments"),
-                trailing: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Opening feedback...")),
-                    );
-                  },
-                  child: const Text("Review"),
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );
