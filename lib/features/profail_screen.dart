@@ -136,7 +136,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.pop(context, userdetails);
+          if (userdetails?.role=='teacher') {
+            Navigator.pop(context, userdetails);
+          }
+          
         }
       } catch (e) {
         if (mounted) {
@@ -239,19 +242,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      IconButton(
-                        icon: _isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.check, color: Colors.white),
-                        onPressed: _isSaving ? null : _saveProfile,
-                      ),
+                      
                     ],
                   ),
                 ),
@@ -337,7 +328,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter your name';
+                                  retuupdaern 'Please enter your name';
                                 }
                                 return null;
                               },

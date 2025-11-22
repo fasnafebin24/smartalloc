@@ -20,7 +20,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
   final TextEditingController startYearCtrl = TextEditingController();
   final TextEditingController endYearCtrl = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
+  final ImagePicker _picker = ImagePicker();
   String? abstractFileName;
   String? abstractFilePath;
   String? finalProjectFileName;
@@ -49,13 +49,39 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
   List<Map<String, dynamic>> teachers = [];
   bool isLoadingTeachers = true;
   bool isSubmitting = false;
-
+XFile? _selectedImage;
   @override
   void initState() {
     super.initState();
     fetchTeachers();
     _loadDepartments();
   }
+
+   Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = XFile(image.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error picking image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  
 
   Future<void> _loadDepartments() async {
     try {
@@ -204,6 +230,10 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
       _showSnackBar("Please select a Department", Colors.red);
       return false;
     }
+    if (_selectedImage == null) {
+      _showSnackBar("Please Project Thumbanil", Colors.red);
+      return false;
+    }
 
     return true;
   }
@@ -222,6 +252,9 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
     );
     var finalprojecturl = await CloudneryUploader().uploadFile(
       XFile(finalProjectFilePath!),
+    );
+    var thumbanilUrl = await CloudneryUploader().uploadFile(
+      _selectedImage!,
     );
     try {
       // Create project document in Firestore
@@ -245,6 +278,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
         'endyear': endYearCtrl.text,
         'department': _selectedDepartment,
         'departmentcode': _selectedDepartmentCode,
+        'logoUrl': thumbanilUrl,
         'status': 'pending',
       };
 

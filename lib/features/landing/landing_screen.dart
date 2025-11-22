@@ -13,7 +13,7 @@ class LandingScreen extends StatefulWidget {
 class _LandingScreenState extends State<LandingScreen> {
    int _selectedIndex = 0;
    List pages=[
-    HomeScreen(),
+    StdHomeScreen(),
     ProfileEditScreen()
    ];
   @override

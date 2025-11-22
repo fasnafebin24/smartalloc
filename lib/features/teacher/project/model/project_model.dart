@@ -22,6 +22,7 @@ class ProjectModel {
     String? domain;
     String? finalProjectFileurl;
     List<String>? namefilter;
+    String? logoUrl;
     String? departmentcode;
     String? startyear;
     String? id;
@@ -41,6 +42,7 @@ class ProjectModel {
         this.domain,
         this.finalProjectFileurl,
         this.namefilter,
+        this.logoUrl,
         this.departmentcode,
         this.startyear,
         this.id,
@@ -61,6 +63,7 @@ class ProjectModel {
         domain: json["domain"],
         finalProjectFileurl: json["finalProjectFileurl"],
         namefilter: json["namefilter"] == null ? [] : List<String>.from(json["namefilter"]!.map((x) => x)),
+        logoUrl: json["logoUrl"],
         departmentcode: json["departmentcode"],
         startyear: json["startyear"],
         id: json["id"],
@@ -81,6 +84,7 @@ class ProjectModel {
         "domain": domain,
         "finalProjectFileurl": finalProjectFileurl,
         "namefilter": namefilter == null ? [] : List<dynamic>.from(namefilter!.map((x) => x)),
+        "logoUrl": logoUrl,
         "departmentcode": departmentcode,
         "startyear": startyear,
         "id": id,

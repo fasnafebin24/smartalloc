@@ -258,15 +258,15 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   const SizedBox(height: 16),
                   _buildInfoRow(
                     Icons.person,
-                    'Student',
+                    'Guide Teacher',
                     widget.project.teacherName ?? 'N/A',
                   ),
-                  const SizedBox(height: 8),
-                  _buildInfoRow(
-                    Icons.badge,
-                    'Roll No',
-                    widget.project.teacherId ?? 'N/A',
-                  ),
+                  // const SizedBox(height: 8),
+                  // _buildInfoRow(
+                  //   Icons.badge,
+                  //   'Roll No',
+                  //   widget.project.teacherId ?? 'N/A',
+                  // ),
                   const SizedBox(height: 8),
                   _buildInfoRow(
                     Icons.calendar_today,
