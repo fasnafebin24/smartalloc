@@ -1,4 +1,5 @@
-// ignore_for_file: use_build_context_synchronously
+
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,7 +8,6 @@ import 'package:smartalloc/features/authentification/login_screen.dart';
 import 'package:smartalloc/features/teacher/project/teach_projectdetail_screen.dart';
 import 'package:smartalloc/utils/variables/globalvariables.dart';
 import '../teacher/project/model/project_model.dart';
-import 'std_favorites_screen.dart';
 
 class StdHomeScreen extends StatefulWidget {
   const StdHomeScreen({super.key});

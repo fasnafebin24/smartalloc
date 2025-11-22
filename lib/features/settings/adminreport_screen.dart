@@ -90,7 +90,6 @@ class _AdminReprtScreenState extends State<AdminReprtScreen> {
     final Timestamp? timestamp = data['timestamp'];
     final String useravatar = data['useravatar'] ?? '';
     final String username = data['username'] ?? 'Unknown';
-    final String userId = data['userid'] ?? '';
 
     final DateTime dateTime = timestamp?.toDate() ?? DateTime.now();
     final String formattedDate = DateFormat('MMM dd, yyyy • hh:mm a').format(dateTime);

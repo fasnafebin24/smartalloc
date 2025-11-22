@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -534,9 +536,9 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
                                         selectedDomains.remove(domain);
                                       });
                                     },
-                                    backgroundColor: const Color(0xFF6200EA).withOpacity(0.1),
+                                    backgroundColor: AppColors.primaryColor.withOpacity(0.1),
                                     labelStyle: const TextStyle(
-                                      color: Color(0xFF6200EA),
+                                      color: AppColors.primaryColor,
                                       fontSize: 13,
                                     ),
                                   );
@@ -547,7 +549,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
                 const SizedBox(height: 16),
 
                 DropdownButtonFormField<String>(
-                  value: _selectedDepartment,
+                  initialValue: _selectedDepartment,
                   decoration: InputDecoration(
                     labelText: "Department",
                     prefixIcon: const Icon(Icons.business_outlined),
@@ -596,7 +598,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
                 const SizedBox(height: 16),
 
                 DropdownButtonFormField<String>(
-                  value: selectedTeacherId,
+                  initialValue: selectedTeacherId,
                   decoration: InputDecoration(
                     labelText: "Select Guide Teacher",
                     prefixIcon: const Icon(Icons.person),

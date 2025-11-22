@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartalloc/features/admin/home/home_screen.dart';
 import 'package:smartalloc/features/authentification/model/user_model.dart';
-import 'package:smartalloc/features/home/home%20_screen.dart';
 import 'package:smartalloc/features/authentification/signup_screen.dart';
 import 'package:smartalloc/features/landing/landing_screen.dart';
 import 'package:smartalloc/features/teacher/bottomnav/dashboard/teach_bottom_nav_screen.dart';
