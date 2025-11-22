@@ -209,6 +209,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: Text('Profile'),backgroundColor:  Color.fromARGB(255, 170, 169, 243),),
       backgroundColor: const Color.fromARGB(255, 170, 169, 243),
       body: _isLoading
           ? const Center(
@@ -216,38 +217,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             )
           : Column(
               children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
-                        ),
-                        onPressed: _isSaving
-                            ? null
-                            : () => Navigator.pop(context),
-                      ),
-                      const Text(
-                        "Edit Profile",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      
-                    ],
-                  ),
-                ),
-      
-                const SizedBox(height: 20),
       
                 // Avatar with Edit
                 Stack(

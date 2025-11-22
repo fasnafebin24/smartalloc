@@ -113,8 +113,9 @@ class _HomeScreenState extends State<StdHomeScreen> {
 
       setState(() => _isLoading = false);
     } catch (e) {
-      setState(() => _isLoading = false);
+     
       if (mounted) {
+         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error fetching projects: $e'),

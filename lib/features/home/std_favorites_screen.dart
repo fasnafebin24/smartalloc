@@ -160,18 +160,12 @@ class _StdFavoritesScreenState extends State<StdFavoritesScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+                    
+
                     const Text(
                       'Favorite Projects',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),

@@ -218,9 +218,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         elevation: 0,
         title: const Text(
           'Project Details',
-          style: TextStyle(fontWeight: FontWeight.w600),
         ),
-        centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Column(
