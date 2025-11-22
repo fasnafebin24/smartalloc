@@ -1,25 +1,18 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:smartalloc/features/authentification/login_screen.dart';
 import 'package:smartalloc/features/teacher/project/teach_projectdetail_screen.dart';
-import 'package:smartalloc/utils/variables/globalvariables.dart';
 import '../teacher/project/model/project_model.dart';
-import 'std_favorites_screen.dart';
 
-class StdHomeScreen extends StatefulWidget {
-  const StdHomeScreen({super.key});
+class StdFavoritesScreen extends StatefulWidget {
+  const StdFavoritesScreen({super.key});
 
   @override
-  State<StdHomeScreen> createState() => _HomeScreenState();
+  State<StdFavoritesScreen> createState() => _StdFavoritesScreenState();
 }
 
-class _HomeScreenState extends State<StdHomeScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  List<ProjectModel> _projects = [];
-  List<ProjectModel> _filteredProjects = [];
+class _StdFavoritesScreenState extends State<StdFavoritesScreen> {
+  List<ProjectModel> _favoriteProjects = [];
   Set<String> _favoriteProjectIds = {};
   bool _isLoading = true;
 
@@ -27,102 +20,123 @@ class _HomeScreenState extends State<StdHomeScreen> {
   void initState() {
     super.initState();
     _loadFavorites();
-    _fetchProjects();
-    _searchController.addListener(_onSearchChanged);
-  }
-
-  @override
-  void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadFavorites() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _favoriteProjectIds = (prefs.getStringList('favorite_projects') ?? []).toSet();
-    });
-  }
-
-  Future<void> _toggleFavorite(String projectId) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      if (_favoriteProjectIds.contains(projectId)) {
-        _favoriteProjectIds.remove(projectId);
-      } else {
-        _favoriteProjectIds.add(projectId);
-      }
-    });
-    await prefs.setStringList('favorite_projects', _favoriteProjectIds.toList());
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _favoriteProjectIds.contains(projectId)
-              ? 'Added to favorites'
-              : 'Removed from favorites',
-        ),
-        backgroundColor: Colors.orange,
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
-
-  void _onSearchChanged() {
-    setState(() {
-      if (_searchController.text.isEmpty) {
-        _filteredProjects = _projects;
-      } else {
-        String query = _searchController.text.toLowerCase();
-        _filteredProjects = _projects.where((project) {
-          return project.namefilter?.any((name) => name.contains(query)) ??
-              false;
-        }).toList();
-      }
-    });
-  }
-
-  Future<void> _fetchProjects() async {
     try {
       setState(() => _isLoading = true);
 
-      Query query;
-      if (userdetails?.departmentcode == 'CS' ||
-          userdetails?.departmentcode == 'BCA') {
-        query = FirebaseFirestore.instance
-            .collection('Projects')
-            .where('status', isEqualTo: 'approved')
-            .where('departmentcode', whereIn: ['CS', 'BCA']);
-      } else {
-        query = FirebaseFirestore.instance
-            .collection('Projects')
-            .where('status', isEqualTo: 'approved')
-            .where('departmentcode', isEqualTo: userdetails?.departmentcode);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      _favoriteProjectIds =
+          (prefs.getStringList('favorite_projects') ?? []).toSet();
+
+      if (_favoriteProjectIds.isEmpty) {
+        setState(() => _isLoading = false);
+        return;
       }
 
-      QuerySnapshot querySnapshot = await query.get();
+      // Fetch favorite projects from Firestore
+      List<ProjectModel> projects = [];
+      
+      // Firestore 'whereIn' has a limit of 10 items, so we need to batch requests
+      List<String> idList = _favoriteProjectIds.toList();
+      for (int i = 0; i < idList.length; i += 10) {
+        int end = (i + 10 < idList.length) ? i + 10 : idList.length;
+        List<String> batch = idList.sublist(i, end);
 
-      _projects = querySnapshot.docs
-          .map(
+        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('Projects')
+            .where(FieldPath.documentId, whereIn: batch)
+            .get();
+
+        projects.addAll(
+          querySnapshot.docs.map(
             (doc) => ProjectModel.fromJson(doc.data() as Map<String, dynamic>),
-          )
-          .toList();
+          ),
+        );
+      }
 
-      _filteredProjects = _projects;
-
-      setState(() => _isLoading = false);
+      setState(() {
+        _favoriteProjects = projects;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error fetching projects: $e'),
+            content: Text('Error loading favorites: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
     }
+  }
+
+  Future<void> _removeFavorite(String projectId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _favoriteProjectIds.remove(projectId);
+      _favoriteProjects.removeWhere((p) => p.id == projectId);
+    });
+    await prefs.setStringList('favorite_projects', _favoriteProjectIds.toList());
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Removed from favorites'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  Future<void> _clearAllFavorites() async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text("Clear All Favorites"),
+          content: const Text(
+            "Are you sure you want to remove all favorite projects?",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await prefs.remove('favorite_projects');
+                setState(() {
+                  _favoriteProjectIds.clear();
+                  _favoriteProjects.clear();
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('All favorites cleared'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text(
+                "Clear All",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -138,110 +152,98 @@ class _HomeScreenState extends State<StdHomeScreen> {
             end: Alignment.bottomLeft,
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+        child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 50),
-              // Top Bar with Favorites and Logout
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // Favorites Button
-                
-                  // Logout Button
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      _showLogoutDialog(context);
-                    },
-                    icon: const Icon(Icons.logout, size: 18),
-                    label: const Text("Logout"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.orange,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Search Bar
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: "Search projects...",
-                  prefixIcon: const Icon(Icons.search, color: Colors.orange),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, color: Colors.grey),
-                          onPressed: () {
-                            _searchController.clear();
-                          },
-                        )
-                      : const Icon(Icons.filter_list, color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 16,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
-                  ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Favorite Projects',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (_favoriteProjects.isNotEmpty)
+                      IconButton(
+                        onPressed: _clearAllFavorites,
+                        icon: const Icon(Icons.delete_sweep, color: Colors.white),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        tooltip: 'Clear all favorites',
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              // Projects Grid
+              // Content
               Expanded(
                 child: _isLoading
                     ? const Center(
                         child: CircularProgressIndicator(color: Colors.orange),
                       )
-                    : _filteredProjects.isEmpty
+                    : _favoriteProjects.isEmpty
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.folder_open,
-                                  size: 80,
+                                  Icons.favorite_border,
+                                  size: 100,
                                   color: Colors.grey[400],
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 20),
                                 Text(
-                                  _searchController.text.isEmpty
-                                      ? 'No approved projects found'
-                                      : 'No projects match your search',
+                                  'No favorite projects yet',
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 18,
                                     color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
                                   ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Tap the heart icon on projects to add them here',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[500],
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
                               ],
                             ),
                           )
                         : RefreshIndicator(
-                            onRefresh: _fetchProjects,
+                            onRefresh: _loadFavorites,
                             color: Colors.orange,
-                            child: GridView.builder(
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: 0.83,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: GridView.builder(
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                  childAspectRatio: 0.83,
+                                ),
+                                itemCount: _favoriteProjects.length,
+                                itemBuilder: (context, index) {
+                                  return _projectCard(_favoriteProjects[index]);
+                                },
                               ),
-                              itemCount: _filteredProjects.length,
-                              itemBuilder: (context, index) {
-                                return _projectCard(_filteredProjects[index]);
-                              },
                             ),
                           ),
               ),
@@ -252,52 +254,7 @@ class _HomeScreenState extends State<StdHomeScreen> {
     );
   }
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text("Logout"),
-          content: const Text("Are you sure you want to logout?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                prefs.clear();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => LoginScreen()),
-                  (route) => false,
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Logged out successfully!"),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-              child: const Text(
-                "Logout",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _projectCard(ProjectModel project) {
-    final isFavorite = _favoriteProjectIds.contains(project.id);
-    
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -438,14 +395,14 @@ class _HomeScreenState extends State<StdHomeScreen> {
                 ],
               ),
             ),
-            // Favorite Button
+            // Remove Favorite Button
             Positioned(
               top: 4,
               right: 4,
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => _toggleFavorite(project.id ?? ''),
+                  onTap: () => _removeFavorite(project.id ?? ''),
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
                     padding: const EdgeInsets.all(8),
@@ -460,8 +417,8 @@ class _HomeScreenState extends State<StdHomeScreen> {
                         ),
                       ],
                     ),
-                    child: Icon(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                    child: const Icon(
+                      Icons.favorite,
                       color: Colors.orange,
                       size: 20,
                     ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smartalloc/features/home/home%20_screen.dart';
+import 'package:smartalloc/features/home/std_favorites_screen.dart';
 
 import '../profail_screen.dart';
 
@@ -14,6 +15,7 @@ class _LandingScreenState extends State<LandingScreen> {
    int _selectedIndex = 0;
    List pages=[
     StdHomeScreen(),
+    StdFavoritesScreen(),
     ProfileEditScreen()
    ];
   @override
@@ -49,10 +51,16 @@ body:pages.elementAt(_selectedIndex) ,
                 onTap: () => setState(() => _selectedIndex = 0),
               ),
               _buildNavButton(
-                icon: Icons.person,
-                label: "Profile",
+                icon: Icons.favorite,
+                label: "Favourite",
                 isSelected: _selectedIndex == 1,
                 onTap: () => setState(() => _selectedIndex = 1),
+              ),
+              _buildNavButton(
+                icon: Icons.person,
+                label: "Profile",
+                isSelected: _selectedIndex == 2,
+                onTap: () => setState(() => _selectedIndex = 2),
               ),
             ],
           ),
