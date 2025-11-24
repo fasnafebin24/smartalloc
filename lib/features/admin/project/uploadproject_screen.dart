@@ -145,7 +145,7 @@ class _UploadProjectPageState extends State<UploadProjectPage> {
           .collection('Users')
           .where('role', isEqualTo: 'teacher')
           .where('status', isEqualTo: 1)
-          .where('department', isEqualTo: _selectedDepartmentCode)
+          .where('departmentcode', isEqualTo: _selectedDepartmentCode)
           .get();
 
       List<Map<String, dynamic>> fetchedTeachers = [];
